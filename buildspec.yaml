@@ -1,24 +1,23 @@
 version: 0.2
 
+env:
+  variables:
+    CHANGED_DIR: ""
+
 phases:
-  install:
-    runtime-versions:
-      python: 3.11
-    commands:
-      - pip install --upgrade pip
   pre_build:
     commands:
-      - echo Installing dependencies...
-      - pip install -r requirements.txt -t .
+      - echo "Detecting changed directories..."
+      - export CHANGED_DIR=$(git diff --name-only HEAD HEAD~1 | grep '/$' | head -n 1 | cut -d '/' -f 1)
+      - echo "Changed directory: $CHANGED_DIR"
+  install:
+    commands:
+      - pip install -r $CHANGED_DIR/requirements.txt
   build:
     commands:
-      - echo Packaging Lambda function...
-      - zip -r function.zip .
+      - zip -r function.zip $CHANGED_DIR
   post_build:
     commands:
-      - echo Uploading package to S3...
-      - aws s3 cp function.zip
-        s3://your-s3-bucket-name/path/to/lambda_function_1/
-artifacts:
-  files:
-    - function.zip
+      - aws s3 cp function.zip s3://${LAMBDA_BUCKET_NAME}/lambda/
+      - version=$(date +%Y%m%d%H%M%S)
+      - aws s3 cp function.zip s3://${LAMBDA_BUCKET_NAME}/lambda/function-${version}.zip
