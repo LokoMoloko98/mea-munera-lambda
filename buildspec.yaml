@@ -13,10 +13,14 @@ phases:
       - if [ -z "$CHANGED_DIRS" ]; then echo "No changes detected, exiting build." exit 0; fi
       - echo "Changed directories:"
       - echo "$CHANGED_DIRS"
-
-  build:
-    commands:
-      - for DIR in $CHANGED_DIRS; do if [ -d "$DIR" ]; then echo "Processing $DIR..."; cd $DIR; pip install -r requirements.txt -t .; zip -r function.zip .; version=$(date +%Y%m%d%H%M%S); aws s3 cp function.zip s3://$SHARED_ARTIFACTS_BUCKET/lambda/$DIR/function-$version.zip; cd ..; else echo "$DIR is not a valid directory, skipping..."; fi; done
+      - echo "Creating JSON file for changed directories..."
+      - jq -n --slurpfile dirs /tmp/changed_dirs.txt '{"changed_dirs": $dirs | unique}' > changed_dirs.json
   post_build:
     commands:
-      - echo "Build phase completed. Artifacts uploaded to S3."
+      - echo "Uploading metadata file to S3..."
+      - aws s3 cp changed_dirs.json s3://$SHARED_ARTIFACTS_BUCKET/lambda/changed_dirs.json
+
+artifacts:
+  files:
+    - lambda/**/*.zip
+    - changed_dirs.json
