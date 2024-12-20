@@ -7,20 +7,16 @@ phases:
       - apt-get update && apt-get install -y zip  # Ensure 'zip' is installed
   pre_build:
     commands:
-      - echo "Detecting changes in the repository..."
-      # - export CHANGED_DIRS=$(git diff-tree --no-commit-id --name-only -r $CODEBUILD_RESOLVED_SOURCE_VERSION | awk -F'/' '{print $1}' | sort -u | uniq)
-      - export CHANGED_DIRS=$(git diff --name-only HEAD~1 HEAD | awk -F'/' '{print $1}' | sort -u | uniq)
-      - if [ -z "$CHANGED_DIRS" ]; then echo "No changes detected, exiting build." exit 0; fi
-      - echo "Changed directories:"
-      - echo "$CHANGED_DIRS"
-      - echo "Creating JSON file for changed directories..."
-      - jq -n --slurpfile dirs /tmp/changed_dirs.txt '{"changed_dirs": $dirs | unique}' > changed_dirs.json
+      - echo "Extracting changed directories from webhook payload..."
+      - export PAYLOAD=$(cat webhook_payload.json)
+      - echo "$PAYLOAD" | jq -r '.commits[].modified[], .commits[].added[]' | awk -F'/' '{print $1}' | sort -u > changed_dirs.txt
+      - export CHANGED_DIRS=$(cat changed_dirs.txt)
+  build:
+    commands:
+      - echo "Build Stage start"
+      - echo "Build Stage end"
   post_build:
     commands:
-      - echo "Uploading metadata file to S3..."
-      - aws s3 cp changed_dirs.json s3://$SHARED_ARTIFACTS_BUCKET/lambda/changed_dirs.json
+      - echo "Post Build start"
+      - echo "Post Build end"
 
-artifacts:
-  files:
-    - lambda/**/*.zip
-    - changed_dirs.json
