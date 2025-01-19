@@ -21,11 +21,11 @@ def lambda_handler(event, context):
         if event['routeKey'] == "DELETE /blogs/{BlogId}":
             table.delete_item(KeyConditionExpression=Key('BlogId').eq(event['pathParameters']['BlogId']))
             body = 'Deleted item ' + event['pathParameters']['BlogId']
-        # elif event['routeKey'] == "GET /blogs/{BlogId}":
-        #     body = table.query(KeyConditionExpression=Key('BlogId').eq(event['pathParameters']['BlogId']))
-        #     body = body["Item"]
-        #     responseBody = [{'BlogId': body['BlogId'], 'BlogTitle': body['BlogTitle'], 'PublishedDate': body['PublishedDate']}]
-        #     body = responseBody
+        elif event['routeKey'] == "GET /blogs/{BlogId}":
+            body = table.query(KeyConditionExpression=Key('BlogId').eq(event['pathParameters']['BlogId']))
+            body = body["Item"]
+            responseBody = [{'BlogId': body['BlogId'], 'BlogTitle': body['BlogTitle'], 'PublishedDate': body['PublishedDate']}]
+            body = responseBody
         # elif event['routeKey'] == "GET /items":
         #     body = table.scan()
         #     body = body["Items"]
