@@ -43,7 +43,31 @@ jobs:
           zip -r ../$ZIP_NAME ./*
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
-       # 6. Update the versions.json file in the root
+      # 5.1 Authenticate to AWS
+      - name: Upload to S3
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      # 5.2 Back up release version to s3
+      - name: Upload File
+        run: |
+          aws s3 cp ${{ env.ZIP_NAME }} s3://your-bucket-name/lokos-blog-crud/
+
+      # 6. Release the lambda function code
+      # - name: AWS CLI v2
+      #   uses: imehedi/actions-awscli-v2@latest
+      #   with:
+      #     args: "lambda update-function-code \
+      #       --function-name arn:aws:<provide your function ARN Here> \
+      #       --zip-file fileb://code.zip"
+      #   env:
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     AWS_DEFAULT_REGION: "us-east-1"
+
+      # 6. Update the versions.json file in the root
       - name: Update Versions JSON
         run: |
           jq --arg version "${{ env.NEW_VERSION }}" '."lift-club-lambda" = $version' versions.json > versions.json.tmp
