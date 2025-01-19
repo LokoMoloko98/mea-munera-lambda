@@ -1,4 +1,4 @@
-name: lokos-blog-crud CI-CD
+name: swift-lift-club CI-CD
 
 on:
   push:
