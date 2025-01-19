@@ -29,38 +29,21 @@ jobs:
       - name: Extract changed directories
         id: extract_dirs
         run: |
-          echo "Extracting changed directories from GitHub payload..."
+          # Set the repository and commit information from the event payload
+          REPO_OWNER="LokoMoloko98"
+          REPO_NAME="mea-munera-lambda"
+          TREE_SHA="${{ github.event.head_commit.tree_id }}"
+          GITHUB_API_URL="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/git/trees/${TREE_SHA}?recursive=true"
+
+          # Fetch the tree structure from GitHub
+          RESPONSE=$(curl -s "$GITHUB_API_URL")
+
+          # Extract directories (paths) from the tree
+          DIRECTORIES=$(echo "$RESPONSE" | jq -r '.tree[] | select(.type == "tree") | .path')
           
-          # Initialize an empty array to hold the directories
-          changed_dirs=()
-
-          # Iterate over each commit and extract directories
-          for commit in ${{ toJson(github.event) }}; do
-            # Extract modified files and append directories to the array
-            for file in $(echo "$commit" | jq -r '.modified[]'); do
-              dir=$(dirname "$file") # Get the directory from the file path
-              changed_dirs+=("$dir")
-            done
-            
-            # Extract added files and append directories to the array
-            for file in $(echo "$commit" | jq -r '.added[]'); do
-              dir=$(dirname "$file")
-              changed_dirs+=("$dir")
-            done
-
-            # Extract removed files and append directories to the array
-            for file in $(echo "$commit" | jq -r '.removed[]'); do
-              dir=$(dirname "$file")
-              changed_dirs+=("$dir")
-            done
-          done
-          
-          # Remove duplicates and sort the directories
-          changed_dirs=$(echo "${changed_dirs[@]}" | tr ' ' '\n' | sort -u)
-
-          # Save the changed directories to a file or set them as output
-          echo "$changed_dirs" > changed_dirs.txt
-          echo "Changed directories: $changed_dirs"
+          # Output the directories
+          echo "Changed Directories:"
+          echo "$DIRECTORIES"
 
        # Step 4: Update versions.json
       - name: Update versions.json
