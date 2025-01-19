@@ -1,4 +1,4 @@
-name: Track Changes in lift-club-lambda
+name: lift-club-lambda CI-CD
 
 on:
   push:
@@ -8,27 +8,52 @@ on:
       - 'lift-club-lambda/**' # Run only if changes are in lift-club-lambda directory
 
 jobs:
-  log-changes:
+  release:
     runs-on: ubuntu-latest
 
     steps:
+       # 1. Checkout the code
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Log Changes for lift-club-lambda
+      # 2. Read current version from versions.json
+      - name: Read Current Version
+        id: read_version
         run: |
-          echo "Changes detected in lokos-blog-crud/..."
-          echo "Updating versions.json..."
-          if [ ! -f versions.json ]; then
-            echo "{}" > versions.json
-          fi
-          cp versions.json versions_old.json
-          while IFS= read -r dir; do
-            if jq -e ".\"$dir\"" versions.json > /dev/null; then
-              jq ".\"$dir\" += 1" versions.json > tmp.json && mv tmp.json versions.json
-            else
-              jq ".\"$dir\" = 1" versions.json > tmp.json && mv tmp.json versions.json
-            fi
-          done < changed_dirs.txt
-          echo "Updated versions.json:"
-          cat versions.json 
+          VERSION=$(jq -r '."lift-club-lambda"' versions.json)
+          echo "Current version: $VERSION"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+      
+      # 3. Increment the patch version
+      - name: Increment Patch Version
+        id: increment_version
+        run: |
+          OLD_VERSION=${{ env.VERSION }}
+          PATCH=$(echo $OLD_VERSION | awk -F. '{print $3 + 1}')
+          NEW_VERSION=$(echo $OLD_VERSION | awk -F. '{print $1 "." $2 "."}'${PATCH})
+          echo "New version: $NEW_VERSION"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+      # 4. Create a zip file for the directory
+      - name: Zip Directory
+        run: |
+          ZIP_NAME=lift-club-lambda-${{ env.NEW_VERSION }}.zip
+          cd lift-club-lambda
+          zip -r ../$ZIP_NAME ./*
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+       # 6. Update the versions.json file in the root
+      - name: Update Versions JSON
+        run: |
+          jq --arg version "${{ env.NEW_VERSION }}" '."lift-club-lambda" = $version' versions.json > versions.json.tmp
+          mv versions.json.tmp versions.json
+          cat versions.json
+
+      # 7. Commit and Push the updated versions.json
+      - name: Commit Versions JSON
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add versions.json
+          git commit -m "Update lift-club-lambda version to ${{ env.NEW_VERSION }}"
+          git push
