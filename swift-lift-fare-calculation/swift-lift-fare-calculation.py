@@ -8,7 +8,6 @@ from botocore.exceptions import ClientError
 print("Packages have imported successfully")
 
 def lambda_handler(event, context):
-    lambda_client = boto3.client('lambda')
     try:
         print("Processing")
 
