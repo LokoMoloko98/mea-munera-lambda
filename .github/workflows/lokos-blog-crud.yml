@@ -1,0 +1,24 @@
+name: Track Changes in lokos-blog-crud
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lokos-blog-crud/**' # Run only if changes are in lokos-blog-crud directory
+
+jobs:
+  log-changes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Log Changes for lokos-blog-crud
+        run: |
+          echo "Changes detected in lokos-blog-crud" >> lokos-blog-crud/log.txt
+          git diff --name-only HEAD^ HEAD -- lokos-blog-crud/ >> lokos-blog-crud/log.txt
+          git add lokos-blog-crud/log.txt
+          git commit -m "Log changes in lokos-blog-crud"
+          git push

@@ -1,0 +1,23 @@
+name: Track Changes in lift-club-lambda
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lift-club-lambda/**' # Run only if changes are in lift-club-lambda directory
+
+jobs:
+  log-changes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Log Changes for lift-club-lambda
+        run: |
+          echo "Changes detected in lift-club-lambda" >> lift-club-lambda/log.txt
+          git diff --name-only HEAD^ HEAD -- lift-club-lambda/ >> lift-club-lambda/log.txt
+          git add lift-club-lambda/log.txt
+          git commit -m "Log changes in lift-club-lambda"
+          git push
