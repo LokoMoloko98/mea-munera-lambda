@@ -1,28 +1,19 @@
 # mea-munera-lambda
 Latin for "My Lambda Functions"
 
-Welcome to the `mea-munera-lambda` project! This repository contains a collection of AWS Lambda functions designed to perform various tasks efficiently and effectively. While these functions are available for use, they were primarily developed for internal purposes.
+Welcome to the `mea-munera-lambda` project! This repository contains a collection of AWS Lambda functions I use on various projects. These functions are designed to perform various tasks efficiently and effectively.
 
 ## Features
 
-- **Scalable**: Automatically scales with the load.
-- **Cost-effective**: Pay only for the compute time you consume.
-- **Flexible**: Supports multiple programming languages.
+* Automated versioning and deployment using GitHub Actions.
+* Lambda functions packaged and uploaded to an S3 bucket.
+* versions.json tracks the latest version of each function.
 
-## Getting Started
+## How It Works
+Changes to a Lambda function directory trigger a workflow.
+The directory is zipped, versioned, and uploaded to S3.
+versions.json is updated with the new version.
 
-To get started with deploying and using these Lambda functions, please refer to the [documentation](docs/).
 
 ## Contributing
-
-We welcome contributions! Please see our [contributing guidelines](CONTRIBUTING.md) for more details.
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Contact
-
-For any questions or feedback, please open an issue or contact us at [support@example.com](mailto:support@example.com).
-
-Thank you for using `mea-munera-lambda`!
+I welcome any contribution or feedback that would improve this project. 
