@@ -53,7 +53,7 @@ jobs:
       # 5.2 Back up release version to s3
       - name: Upload File
         run: |
-          aws s3 cp ${{ env.ZIP_NAME }} s3://mea-munera-lambda/lokos-blog-crud/
+          aws s3 cp ${{ env.ZIP_NAME }} s3://mea-munera-lambda/lift-club-lambda/
 
       # 6. Release the lambda function code
       # - name: AWS CLI v2
