@@ -67,14 +67,14 @@ jobs:
       #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       #     AWS_DEFAULT_REGION: "us-east-1"
 
-      # 6. Update the versions.json file in the root
+      # 7. Update the versions.json file in the root
       - name: Update Versions JSON
         run: |
           jq --arg version "${{ env.NEW_VERSION }}" '."lift-club-lambda" = $version' versions.json > versions.json.tmp
           mv versions.json.tmp versions.json
           cat versions.json
 
-      # 7. Commit and Push the updated versions.json
+      # 8. Commit and Push the updated versions.json
       - name: Commit Versions JSON
         run: |
           git config --global user.name "github-actions[bot]"
