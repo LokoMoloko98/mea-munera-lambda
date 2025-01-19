@@ -16,50 +16,74 @@ jobs:
         with:
           fetch-depth: 0
       
-      # Step 2: Install jq (for JSON manipulation)
-      - name: Install jq (for JSON manipulation)
-        run: sudo apt-get install -y jq
-      
-      # Step 3: Inspect the GitHub event payload
+      # Step 2: Inspect the GitHub event payload
       - name: Inspect GitHub event payload
         run: |
           echo "GitHub event payload:"
           echo "${{ toJson(github.event.repository.owner) }}" 
 
-      # # Step 4: Parse the GitHub event payload
-      # - name: Extract changed directories
-      #   id: extract_dirs
-      #   run: |
-      #     echo "Extracting changed directories from GitHub payload..."
-      #     cat changed_files.txt | awk -F'/' '{print $1}' | sort -u > changed_dirs.txt
-      #     echo "CHANGED_DIRS=$(cat changed_dirs.txt)" >> $GITHUB_ENV
-      #     cat changed_dirs.txt
+      # Step 3: Extract changed directories from modified, added, and removed files
+      - name: Extract changed directories
+        id: extract_dirs
+        run: |
+          echo "Extracting changed directories from GitHub payload..."
+          
+          # Initialize an empty array to hold the directories
+          changed_dirs=()
 
-      # Step 3: Update versions.json
-      # - name: Update versions.json
-      #   id: update_versions
-      #   run: |
-      #     echo "Updating versions.json..."
-      #     if [ ! -f versions.json ]; then
-      #       echo "{}" > versions.json
-      #     fi
-      #     cp versions.json versions_old.json
-      #     while IFS= read -r dir; do
-      #       if jq -e ".\"$dir\"" versions.json > /dev/null; then
-      #         jq ".\"$dir\" += 1" versions.json > tmp.json && mv tmp.json versions.json
-      #       else
-      #         jq ".\"$dir\" = 1" versions.json > tmp.json && mv tmp.json versions.json
-      #       fi
-      #     done < changed_dirs.txt
-      #     echo "Updated versions.json:"
-      #     cat versions.json
+          # Iterate over each commit and extract directories
+          for commit in ${{ toJson(github.event.commits) }}; do
+            # Extract modified files and append directories to the array
+            for file in $(echo "$commit" | jq -r '.modified[]'); do
+              dir=$(dirname "$file") # Get the directory from the file path
+              changed_dirs+=("$dir")
+            done
+            
+            # Extract added files and append directories to the array
+            for file in $(echo "$commit" | jq -r '.added[]'); do
+              dir=$(dirname "$file")
+              changed_dirs+=("$dir")
+            done
 
-      # # Step 4: Commit and push the changes
-      # - name: Commit and push changes
-      #   if: success()
-      #   run: |
-      #     git config --global user.name "GitHub Actions"
-      #     git config --global user.email "actions@github.com"
-      #     git add versions.json
-      #     git commit -m "Automated version bump for changed directories"
-      #     git push
+            # Extract removed files and append directories to the array
+            for file in $(echo "$commit" | jq -r '.removed[]'); do
+              dir=$(dirname "$file")
+              changed_dirs+=("$dir")
+            done
+          done
+          
+          # Remove duplicates and sort the directories
+          changed_dirs=$(echo "${changed_dirs[@]}" | tr ' ' '\n' | sort -u)
+
+          # Save the changed directories to a file or set them as output
+          echo "$changed_dirs" > changed_dirs.txt
+          echo "Changed directories: $changed_dirs"
+
+       # Step 4: Update versions.json
+      - name: Update versions.json
+        id: update_versions
+        run: |
+          echo "Updating versions.json..."
+          if [ ! -f versions.json ]; then
+            echo "{}" > versions.json
+          fi
+          cp versions.json versions_old.json
+          while IFS= read -r dir; do
+            if jq -e ".\"$dir\"" versions.json > /dev/null; then
+              jq ".\"$dir\" += 1" versions.json > tmp.json && mv tmp.json versions.json
+            else
+              jq ".\"$dir\" = 1" versions.json > tmp.json && mv tmp.json versions.json
+            fi
+          done < changed_dirs.txt
+          echo "Updated versions.json:"
+          cat versions.json
+
+      # Step 4: Commit and push the changes
+      - name: Commit and push changes
+        if: success()
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add versions.json
+          git commit -m "Automated version bump for changed directories"
+          git push
