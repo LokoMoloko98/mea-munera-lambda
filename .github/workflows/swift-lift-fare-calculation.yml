@@ -56,16 +56,16 @@ jobs:
           aws s3 cp ${{ env.ZIP_NAME }} s3://mea-munera-lambda/swift-lift-fare-calculation/
       
       # 6. Release the lambda function code
-      # - name: AWS CLI v2
-      #   uses: imehedi/actions-awscli-v2@latest
-      #   with:
-      #     args: "lambda update-function-code \
-      #       --function-name arn:aws:<provide your function ARN Here> \
-      #       --zip-file fileb://code.zip"
-      #   env:
-      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #     AWS_DEFAULT_REGION: "us-east-1"
+      - name: AWS CLI v2
+        uses: imehedi/actions-awscli-v2@latest
+        with:
+          args: "lambda update-function-code \
+            --function-name arn:aws:${{ secrets.swift_lift_club_lambda_arn}} \
+            --zip-file fileb://${{ env.ZIP_NAME }}"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: "us-east-1"
 
       # 7. Update the versions.json file in the root
       - name: Update Versions JSON
