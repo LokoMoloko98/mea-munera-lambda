@@ -24,7 +24,7 @@ jobs:
       - name: Inspect GitHub event payload
         run: |
           echo "GitHub event payload:"
-          echo "${{ toJson(github.event) }}" | jq '.'
+          echo "${{ toJson(github.event) }}" 
 
       # Step 4: Parse the GitHub event payload
       - name: Extract changed directories
