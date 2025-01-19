@@ -24,17 +24,16 @@ jobs:
       - name: Inspect GitHub event payload
         run: |
           echo "GitHub event payload:"
-          echo "${{ toJson(github.event) }}" 
+          echo "${{ toJson(github.event.repository.owner) }}" 
 
-      # Step 4: Parse the GitHub event payload
-      - name: Extract changed directories
-        id: extract_dirs
-        run: |
-          echo "Extracting changed directories from GitHub payload..."
-          echo "${{ toJson(github.event.commits) }}" | jq -r '.[].modified[]' > changed_files.txt
-          cat changed_files.txt | awk -F'/' '{print $1}' | sort -u > changed_dirs.txt
-          echo "CHANGED_DIRS=$(cat changed_dirs.txt)" >> $GITHUB_ENV
-          cat changed_dirs.txt
+      # # Step 4: Parse the GitHub event payload
+      # - name: Extract changed directories
+      #   id: extract_dirs
+      #   run: |
+      #     echo "Extracting changed directories from GitHub payload..."
+      #     cat changed_files.txt | awk -F'/' '{print $1}' | sort -u > changed_dirs.txt
+      #     echo "CHANGED_DIRS=$(cat changed_dirs.txt)" >> $GITHUB_ENV
+      #     cat changed_dirs.txt
 
       # Step 3: Update versions.json
       # - name: Update versions.json
