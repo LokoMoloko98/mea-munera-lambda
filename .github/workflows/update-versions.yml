@@ -23,7 +23,7 @@ jobs:
       - name: Inspect GitHub event payload
         run: |
           echo "GitHub event payload:"
-          echo "${{ toJson(github.event.commits) }}" 
+          echo "${{ toJson(github.event) }}" 
 
       # Step 3: Extract changed directories from modified, added, and removed files
       - name: Extract changed directories
