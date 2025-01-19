@@ -7,10 +7,10 @@ phases:
       - apt-get update && apt-get install -y zip  # Ensure 'zip' is installed
   pre_build:
     commands:
-      - echo "Extracting changed directories from webhook payload..."
-      - export PAYLOAD=$(cat webhook_payload.json)
-      - echo "$PAYLOAD" | jq -r '.commits[].modified[], .commits[].added[]' | awk -F'/' '{print $1}' | sort -u > changed_dirs.txt
-      - export CHANGED_DIRS=$(cat changed_dirs.txt)
+      - echo "Reading GitHub payload from CodePipeline artifact..."
+      - ls -al $CODEBUILD_SRC_DIR
+      - cat $CODEBUILD_SRC_DIR/buildspec.yaml
+      - cat $CODEBUILD_SRC_DIR/versions.json
   build:
     commands:
       - echo "Build Stage start"
