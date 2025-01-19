@@ -1,1 +1,3 @@
 No previous commit. Assuming initial changes in lift-club-lambda:
+No previous commit. Assuming initial changes in lift-club-lambda:
+lift-club-lambda/log.txt
