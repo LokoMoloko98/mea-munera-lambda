@@ -16,8 +16,14 @@ jobs:
 
       - name: Log Changes for lift-club-lambda
         run: |
-          echo "Changes detected in lift-club-lambda" >> lift-club-lambda/log.txt
-          git diff --name-only HEAD^ HEAD -- lift-club-lambda/ >> lift-club-lambda/log.txt
+          # Handle cases where there might not be a previous commit
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            echo "Changes detected in lift-club-lambda:" >> lift-club-lambda/log.txt
+            git diff --name-only HEAD^ HEAD -- lift-club-lambda/ >> lift-club-lambda/log.txt
+          else
+            echo "No previous commit. Assuming initial changes in lift-club-lambda:" >> lift-club-lambda/log.txt
+            git diff --name-only HEAD -- lift-club-lambda/ >> lift-club-lambda/log.txt
+          fi
           git add lift-club-lambda/log.txt
           git commit -m "Log changes in lift-club-lambda"
           git push
