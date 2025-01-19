@@ -35,7 +35,7 @@ jobs:
           changed_dirs=()
 
           # Iterate over each commit and extract directories
-          for commit in ${{ toJson(github.event.commits) }}; do
+          for commit in ${{ toJson(github.event) }}; do
             # Extract modified files and append directories to the array
             for file in $(echo "$commit" | jq -r '.modified[]'); do
               dir=$(dirname "$file") # Get the directory from the file path
