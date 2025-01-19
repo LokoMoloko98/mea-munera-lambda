@@ -24,6 +24,8 @@ jobs:
             echo "No previous commit. Assuming initial changes in lift-club-lambda:" >> lift-club-lambda/log.txt
             git diff --name-only HEAD -- lift-club-lambda/ >> lift-club-lambda/log.txt
           fi
+          git config --global user.name "LokoBot"
+          git config --global user.email "molavovic@gmail.com"
           git add lift-club-lambda/log.txt
           git commit -m "Log changes in lift-club-lambda"
           git push
