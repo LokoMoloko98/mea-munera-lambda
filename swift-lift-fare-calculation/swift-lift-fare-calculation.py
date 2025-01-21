@@ -9,7 +9,7 @@ print("Packages have imported successfully")
 dynamodb = boto3.resource('dynamodb')
 
 # DynamoDB table name
-TRIPS_TABLE = "trips"  # Replace with your table name
+TRIPS_TABLE = "Swift-lift-club-portal-trips"
 
 def lambda_handler(event, context):
     body = {}
