@@ -1,6 +1,5 @@
 import boto3
 import json
-import requests
 
 from botocore.exceptions import ClientError
 print("Packages have imported successfully")
@@ -8,7 +7,8 @@ print("Packages have imported successfully")
 def lambda_handler(event, context):
     try:
         print("Processing")
-
+        print(event)
+        print(context)
         return {
             'statusCode': 200,
             'body': json.dumps('Process completed successfully')
