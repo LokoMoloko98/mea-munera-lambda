@@ -6,10 +6,11 @@ from botocore.exceptions import ClientError
 print("Packages have imported successfully")
 
 # Initialize DynamoDB
+client = boto3.client('dynamodb')
 dynamodb = boto3.resource('dynamodb')
+trips_table_name = "Swift-lift-club-portal-trips"
+trips_table = dynamodb.Table(trips_table_name)
 
-# DynamoDB table name
-TRIPS_TABLE = "Swift-lift-club-portal-trips"
 
 def lambda_handler(event, context):
     body = {}
@@ -28,7 +29,6 @@ def lambda_handler(event, context):
             raise ValueError("passenger_id and total_trips must be provided")
 
         # Fetch missed trips for the passenger
-        trips_table = dynamodb.Table(TRIPS_TABLE)
         response = trips_table.get_item(Key={"passenger_id": passenger_id})
         if 'Item' not in response:
             raise ValueError("Passenger data not found")
