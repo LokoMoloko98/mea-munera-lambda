@@ -7,6 +7,11 @@ dynamodb = boto3.resource('dynamodb')
 trips_table_name = "Swift-lift-club-portal-trips"
 trips_table = dynamodb.Table(trips_table_name)
 
+def custom_serializer(obj):
+    if isinstance(obj, Decimal):
+        return float(obj)  # Convert Decimal to float
+    raise TypeError(f"Type {type(obj)} not serializable")
+
 def lambda_handler(event, context):
     body = {}
     statusCode = 200
