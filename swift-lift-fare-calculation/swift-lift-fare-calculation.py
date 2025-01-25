@@ -116,8 +116,8 @@ def lambda_handler(event, context):
         print("Processing")
         print(f"Received event: {json.dumps(event, indent=4, default=custom_serializer)}")
         # Extract passenger_id and total trips from the event
-        passenger_id = event.get('passenger_id')
-        target_week = event.get('target_week')
+        passenger_id = event.get("queryStringParameters").get('passenger_id')
+        target_week = event.get("queryStringParameters").get('target_week')
         if not passenger_id or not target_week:
             raise ValueError("passenger_id and target_week must be provided")
         print(f"Calculating fare for Passenger ID: {passenger_id}, for the week beginning on: {target_week}")
@@ -130,7 +130,7 @@ def lambda_handler(event, context):
         print(f"Total trips for the week beginning on {target_week}: {total_trips}, Missed trips: {missed_trips}")
 
         # Calculate the final fare
-        result = calculate_fare(total_trips=total_trips, missed_trips=missed_trips, weekly_fare=350) # Default weekly fare is 350 for now, will fecth from users DB later
+        result = calculate_fare(total_trips=total_trips, missed_trips=missed_trips, weekly_fare=350) # Default weekly fare is 350 for now, will fetch from users DB later
         final_fare = result['final_fare']
         print(f"Final fare calculated: R{final_fare}")
 
