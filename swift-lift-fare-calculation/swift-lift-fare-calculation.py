@@ -124,8 +124,9 @@ def lambda_handler(event, context):
 
         # Fetch trips for the passenger
         weekly_trips = get_weekly_trips(passenger_id, target_week)
-        missed_trips = [trip for trip in weekly_trips if trip['status'] == 'missed']
-        total_trips = len(weekly_trips)
+        missed_trips_list = [trip for trip in weekly_trips if trip['status'] == 'missed']
+        missed_trips = len(missed_trips_list)
+        total_trips = 10  # Expected Total trips in a week
         print(f"Total trips: {total_trips}, Missed trips: {missed_trips}")
         
         # Calculate the discount threshold
