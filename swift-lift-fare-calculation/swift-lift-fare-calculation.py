@@ -114,48 +114,50 @@ def lambda_handler(event, context):
     }
     try:
         print("Processing")
-        print(event)
+        # print(event)
 
         # Extract passenger_id and total trips from the event
         passenger_id = event.get('passenger_id')
         target_week = event.get('target_week')
         if not passenger_id or not target_week:
             raise ValueError("passenger_id and target_week must be provided")
+        print(f"Calculating fare for Passenger ID: {passenger_id}, for the week beginning on: {target_week}")
 
         # Fetch trips for the passenger
         weekly_trips = get_weekly_trips(passenger_id, target_week)
         missed_trips_list = [trip for trip in weekly_trips if trip['status'] == 'missed']
         missed_trips = len(missed_trips_list)
         total_trips = 10  # Expected Total trips in a week
-        print(f"Total trips: {total_trips}, Missed trips: {missed_trips}")
+        print(f"Total trips for the week beginning on {target_week}: {total_trips}, Missed trips: {missed_trips}")
         
-        # Calculate the discount threshold
-        discount_threshold = ceil(total_trips * 0.4)
+        # # Calculate the discount threshold
+        # discount_threshold = ceil(total_trips * 0.4)
 
-        # Calculate eligible missed trips for discount
-        eligible_missed_trips = max(0, missed_trips - discount_threshold)
-        discount_per_trip = 0.15 * 350  # 15% of R350
-        total_discount = eligible_missed_trips * discount_per_trip
+        # # Calculate eligible missed trips for discount
+        # eligible_missed_trips = max(0, missed_trips - discount_threshold)
+        # discount_per_trip = 0.15 * 350  # 15% of R350
+        # total_discount = eligible_missed_trips * discount_per_trip
 
-        # Calculate the final fare
-        final_fare = 350 - total_discount
-        final_fare = max(final_fare, 0)  # Ensure fare is not negative
-
+        # # Calculate the final fare
+        # final_fare = 350 - total_discount
+        # final_fare = max(final_fare, 0)  # Ensure fare is not negative
+        result = calculate_fare(total_trips=10, missed_trips=10, weekly_fare=350)
+        final_fare = result['final_fare']
         print(f"Final fare calculated: R{final_fare}")
 
-        body = {
-            "passenger_id": passenger_id,
-            "total_trips": total_trips,
-            "missed_trips": missed_trips,
-            "discount_threshold": discount_threshold,
-            "eligible_missed_trips": eligible_missed_trips,
-            "total_discount": total_discount,
-            "final_fare": final_fare
-        }
+        # result = {
+        #     "passenger_id": passenger_id,
+        #     "total_trips": total_trips,
+        #     "missed_trips": missed_trips,
+        #     "discount_threshold": discount_threshold,
+        #     "eligible_missed_trips": eligible_missed_trips,
+        #     "total_discount": total_discount,
+        #     "final_fare": final_fare
+        # }
 
         return {
             'statusCode': statusCode,
-            'body': json.dumps(body),
+            'body': json.dumps(result),
             'headers': headers
         }
 
