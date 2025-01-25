@@ -3,6 +3,7 @@ import json
 from math import ceil
 from botocore.exceptions import ClientError
 from decimal import Decimal
+from boto3.dynamodb.conditions import Key
 from datetime import datetime, timedelta
 
 print("Packages have imported successfully")
