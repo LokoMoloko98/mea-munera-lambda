@@ -1,7 +1,8 @@
 import boto3
 import json
-from botocore.exceptions import ClientError
 from datetime import datetime, timedelta, timezone
+from boto3.dynamodb.conditions import Key
+from botocore.exceptions import ClientError
 
 # Initialize DynamoDB
 dynamodb = boto3.resource('dynamodb')
@@ -14,10 +15,46 @@ def generate_trip_date_time():
     Returns:
         str: The current date and time in ISO 8601 format (e.g., "2025-01-25T16:30:00+02:00").
     """
-    # Define UTC+2 offset
     utc_plus_2 = timezone(timedelta(hours=2))
     now = datetime.now(utc_plus_2)
     return now.isoformat(timespec="seconds")
+
+def get_weekly_trips(passenger_id, target_date):
+    """
+    Get all trips for a passenger from the specified Monday to the following Friday.
+
+    Args:
+        passenger_id (str): The ID of the passenger.
+        target_date (str): A Monday date (in ISO 8601 format, e.g., "2025-01-20").
+    Returns:
+        list: A list of trips for the specified week.
+    """
+    # Parse the target date
+    target_date_obj = datetime.fromisoformat(target_date)
+
+    # Check if the date is a Monday
+    if target_date_obj.weekday() != 0:  # 0 = Monday
+        raise ValueError(f"target_date {target_date} is not a Monday. Please provide a Monday.")
+
+    # Calculate Friday of the same week
+    friday_date_obj = target_date_obj + timedelta(days=4)
+
+    # Format dates to ISO 8601 with UTC+2 timezone
+    utc_plus_2 = timezone(timedelta(hours=2))
+    start_of_week_iso = target_date_obj.replace(tzinfo=utc_plus_2).strftime("%Y-%m-%dT00:00:00%z")
+    end_of_week_iso = friday_date_obj.replace(tzinfo=utc_plus_2).strftime("%Y-%m-%dT23:59:59%z")
+
+    try:
+        # Query the table
+        response = trips_table.query(
+            KeyConditionExpression=Key('passenger_id').eq(passenger_id) & 
+                                   Key('trip_date_time').between(start_of_week_iso, end_of_week_iso)
+        )
+        return response.get('Items', [])
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return []
 
 def lambda_handler(event, context):
     body = {}
@@ -29,20 +66,19 @@ def lambda_handler(event, context):
     try:
         print("Processing operation for trips table")
 
-        # Extract operation type (add/update)
+        # Extract operation type
         operation = event.get("operation")
-        if operation not in ["add", "update"]:
-            raise ValueError("Invalid operation. Must be 'add' or 'update'.")
-
-        # Extract passenger_id and status
-        passenger_id = event.get("passenger_id")
-        status = event.get("status")
-
-        if not passenger_id or not status:
-            raise ValueError("Missing required fields: passenger_id, status.")
+        if operation not in ["add", "update", "get_weekly_trips"]:
+            raise ValueError("Invalid operation. Must be 'add', 'update', or 'get_weekly_trips'.")
 
         if operation == "add":
-            # Generate trip_date_time automatically in Central African Time
+            # Extract passenger_id and status
+            passenger_id = event.get("passenger_id")
+            status = event.get("status")
+            if not passenger_id or not status:
+                raise ValueError("Missing required fields: passenger_id, status.")
+
+            # Generate trip_date_time automatically
             trip_date_time = generate_trip_date_time()
 
             # Add a new record
@@ -60,10 +96,12 @@ def lambda_handler(event, context):
             }
 
         elif operation == "update":
-            # Extract trip_date_time for updates
+            # Extract required fields for updates
+            passenger_id = event.get("passenger_id")
             trip_date_time = event.get("trip_date_time")
-            if not trip_date_time:
-                raise ValueError("trip_date_time must be provided for update operations.")
+            status = event.get("status")
+            if not passenger_id or not trip_date_time or not status:
+                raise ValueError("Missing required fields: passenger_id, trip_date_time, status.")
 
             # Update an existing record
             response = trips_table.update_item(
@@ -81,6 +119,20 @@ def lambda_handler(event, context):
                 ReturnValues="UPDATED_NEW"
             )
             body = {"message": "Record updated successfully", "response": response}
+
+        elif operation == "get_weekly_trips":
+            # Extract required fields for getting weekly trips
+            passenger_id = event.get("passenger_id")
+            target_week = event.get("target_week")  # Monday's date in ISO 8601 format
+            if not passenger_id or not target_week:
+                raise ValueError("Missing required fields: passenger_id, target_week.")
+
+            # Fetch weekly trips
+            weekly_trips = get_weekly_trips(passenger_id, target_week)
+            body = {
+                "message": f"Weekly trips for passenger_id: {passenger_id} from {target_week}",
+                "weekly_trips": weekly_trips
+            }
 
     except ValueError as ve:
         print(f"Value error: {ve}")
