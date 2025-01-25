@@ -114,7 +114,6 @@ def lambda_handler(event, context):
     }
     try:
         print("Processing")
-        # print(event)
 
         # Extract passenger_id and total trips from the event
         passenger_id = event.get('passenger_id')
@@ -129,31 +128,11 @@ def lambda_handler(event, context):
         missed_trips = len(missed_trips_list)
         total_trips = 10  # Expected Total trips in a week
         print(f"Total trips for the week beginning on {target_week}: {total_trips}, Missed trips: {missed_trips}")
-        
-        # # Calculate the discount threshold
-        # discount_threshold = ceil(total_trips * 0.4)
 
-        # # Calculate eligible missed trips for discount
-        # eligible_missed_trips = max(0, missed_trips - discount_threshold)
-        # discount_per_trip = 0.15 * 350  # 15% of R350
-        # total_discount = eligible_missed_trips * discount_per_trip
-
-        # # Calculate the final fare
-        # final_fare = 350 - total_discount
-        # final_fare = max(final_fare, 0)  # Ensure fare is not negative
-        result = calculate_fare(total_trips=10, missed_trips=10, weekly_fare=350)
+        # Calculate the final fare
+        result = calculate_fare(total_trips=total_trips, missed_trips=missed_trips, weekly_fare=350) # Default weekly fare is 350 for now, will fecth from users DB later
         final_fare = result['final_fare']
         print(f"Final fare calculated: R{final_fare}")
-
-        # result = {
-        #     "passenger_id": passenger_id,
-        #     "total_trips": total_trips,
-        #     "missed_trips": missed_trips,
-        #     "discount_threshold": discount_threshold,
-        #     "eligible_missed_trips": eligible_missed_trips,
-        #     "total_discount": total_discount,
-        #     "final_fare": final_fare
-        # }
 
         return {
             'statusCode': statusCode,
