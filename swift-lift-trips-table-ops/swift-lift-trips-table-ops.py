@@ -9,6 +9,11 @@ dynamodb = boto3.resource('dynamodb')
 trips_table_name = "Swift-lift-club-portal-trips"
 trips_table = dynamodb.Table(trips_table_name)
 
+def custom_serializer(obj):
+    if isinstance(obj, Decimal):
+        return float(obj)  # Convert Decimal to float
+    raise TypeError(f"Type {type(obj)} not serializable")
+
 def generate_trip_date_time():
     """
     Generate the current date and time in Central African Time (UTC+2) in ISO 8601 format.
@@ -62,6 +67,7 @@ def lambda_handler(event, context):
     headers = {
         "Content-Type": "application/json"
     }
+    print(f"Received event: {json.dumps(event, indent=4, default=custom_serializer)}")
 
     try:
         print("Processing operation for trips table")

@@ -114,7 +114,7 @@ def lambda_handler(event, context):
     }
     try:
         print("Processing")
-
+        print(f"Received event: {json.dumps(event, indent=4, default=custom_serializer)}")
         # Extract passenger_id and total trips from the event
         passenger_id = event.get('passenger_id')
         target_week = event.get('target_week')
