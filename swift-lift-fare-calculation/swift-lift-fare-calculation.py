@@ -116,10 +116,8 @@ def lambda_handler(event, context):
         print(event)
 
         # Extract passenger_id and total trips from the event
-        # passenger_id = event.get('passenger_id')
-        # target_week = event.get('target_week')
-        passenger_id = "psg-001"
-        target_week = "2025-01-13"
+        passenger_id = event.get('passenger_id')
+        target_week = event.get('target_week')
         if not passenger_id or not target_week:
             raise ValueError("passenger_id and target_week must be provided")
 
