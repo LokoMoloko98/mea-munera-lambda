@@ -1,8 +1,7 @@
 import boto3
 import json
 from botocore.exceptions import ClientError
-from datetime import datetime
-import pytz  # For timezone conversion
+from datetime import datetime, timedelta, timezone
 
 # Initialize DynamoDB
 dynamodb = boto3.resource('dynamodb')
@@ -15,8 +14,10 @@ def generate_trip_date_time():
     Returns:
         str: The current date and time in ISO 8601 format (e.g., "2025-01-25T16:30:00+02:00").
     """
-    cat_tz = pytz.timezone("Africa/Johannesburg")  # Central African Time
-    return datetime.now(cat_tz).strftime("%Y-%m-%dT%H:%M:%S%z")
+    # Define UTC+2 offset
+    utc_plus_2 = timezone(timedelta(hours=2))
+    now = datetime.now(utc_plus_2)
+    return now.isoformat(timespec="seconds")
 
 def lambda_handler(event, context):
     body = {}
