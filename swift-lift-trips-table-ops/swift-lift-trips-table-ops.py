@@ -2,6 +2,7 @@ import boto3
 import json
 from datetime import datetime, timedelta, timezone
 from boto3.dynamodb.conditions import Key
+from decimal import Decimal
 from botocore.exceptions import ClientError
 
 # Initialize DynamoDB
@@ -67,20 +68,20 @@ def lambda_handler(event, context):
     headers = {
         "Content-Type": "application/json"
     }
-    print(f"Received event: {json.dumps(event, indent=4, default=custom_serializer)}")
+    # print(f"Received event: {json.dumps(event, indent=4, default=custom_serializer)}")
 
     try:
         print("Processing operation for trips table")
 
         # Extract operation type
-        operation = event.get("operation")
+        operation = event.get("queryStringParameters").get("operation")
         if operation not in ["add", "update", "get_weekly_trips"]:
             raise ValueError("Invalid operation. Must be 'add', 'update', or 'get_weekly_trips'.")
 
         if operation == "add":
             # Extract passenger_id and status
-            passenger_id = event.get("passenger_id")
-            status = event.get("status")
+            passenger_id = event.get("queryStringParameters").get("passenger_id")
+            status = event.get("queryStringParameters").get("status")
             if not passenger_id or not status:
                 raise ValueError("Missing required fields: passenger_id, status.")
 
@@ -103,9 +104,9 @@ def lambda_handler(event, context):
 
         elif operation == "update":
             # Extract required fields for updates
-            passenger_id = event.get("passenger_id")
-            trip_date_time = event.get("trip_date_time")
-            status = event.get("status")
+            passenger_id = event.get("queryStringParameters").get("passenger_id")
+            trip_date_time = event.get("queryStringParameters").get("trip_date_time")
+            status = event.get("queryStringParameters").get("status")
             if not passenger_id or not trip_date_time or not status:
                 raise ValueError("Missing required fields: passenger_id, trip_date_time, status.")
 
@@ -128,8 +129,8 @@ def lambda_handler(event, context):
 
         elif operation == "get_weekly_trips":
             # Extract required fields for getting weekly trips
-            passenger_id = event.get("passenger_id")
-            target_week = event.get("target_week")  # Monday's date in ISO 8601 format
+            passenger_id = event.get("queryStringParameters").get("passenger_id")
+            target_week = event.get("queryStringParameters").get("target_week")  # Monday's date in ISO 8601 format
             if not passenger_id or not target_week:
                 raise ValueError("Missing required fields: passenger_id, target_week.")
 
