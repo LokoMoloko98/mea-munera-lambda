@@ -64,7 +64,7 @@ def get_weekly_trips(passenger_id, target_date):
         print(f"An error occurred: {e}")
         return []
     
-async def get_passenger_name(passenger_id):
+def get_passenger_name(passenger_id):
     """
     Get passenger name from users table
     """
