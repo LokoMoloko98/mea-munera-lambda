@@ -58,15 +58,11 @@ def get_weekly_trips(passenger_id, target_date):
             KeyConditionExpression=Key('passenger_id').eq(passenger_id) & 
                                    Key('trip_date_time').between(start_of_week_iso, end_of_week_iso)
         )
-         # Check if Items exists and has at least one item
-        if response.get('Items') and len(response['Items']) > 0:
-            # Get the first (and should be only) item's passenger_name
-            return response['Items'][0]['passenger_name']
-        return None
-    
+        return response.get('Items', [])
+
     except Exception as e:
-        print(f"Error getting passenger name: {e}")
-        return None
+        print(f"An error occurred: {e}")
+        return []
     
 def get_passenger_name(passenger_id):
     """
@@ -76,8 +72,9 @@ def get_passenger_name(passenger_id):
         response = users_table.query(
             KeyConditionExpression=Key('passenger_id').eq(passenger_id)
         )
-        if 'Items' in response:
-            return response['Items']['passenger_name']
+        if response.get('Items') and len(response['Items']) > 0:
+            return response['Items'][0]['passenger_name']
+        return None
     except Exception as e:
         print(f"Error getting passenger name: {e}")
     return None
