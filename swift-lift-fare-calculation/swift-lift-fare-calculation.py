@@ -145,7 +145,7 @@ def lambda_handler(event, context):
         completed_trips = len(completed_trips_list)
         missed_trips = len(missed_trips_list)
         total_trips = 10  # Expected Total trips in a week
-        print(f"Total trips for the week beginning on {target_week}: {total_trips}, Missed trips: {missed_trips}")
+        print(f"Trips for {target_week}: Completed trips: {total_trips}, Missed trips: {missed_trips}")
 
         # Get passenger name
         passenger_name = get_passenger_name(passenger_id)
