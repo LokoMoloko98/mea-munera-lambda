@@ -72,8 +72,8 @@ def get_passenger_name(passenger_id):
         response = users_table.query(
             KeyConditionExpression=Key('passenger_id').eq(passenger_id)
         )
-        if 'Item' in response:
-            return response['Item'].get('passenger_name')
+        print(f"Response: {response}")
+        return response['Item'].get('passenger_name')
     except Exception as e:
         print(f"Error getting passenger name: {e}")
     return None
