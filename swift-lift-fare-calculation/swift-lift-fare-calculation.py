@@ -160,10 +160,11 @@ def lambda_handler(event, context):
         body = {}
         body['passenger_id'] = passenger_id
         body['passenger_name'] = passenger_name
-        body['total_trips_completed'] = completed_trips
-        body['total_trips_missed'] = missed_trips
+        body['trips_completed'] = completed_trips
+        body['trips_missed'] = missed_trips
         body['total_trips_expected'] = total_trips
-        body['total_discount'] = result['total_discount']
+        body['total_trips_recorded'] = completed_trips + missed_trips
+        body['discount'] = result['total_discount']
         body['final_fare'] = final_fare
 
         return {
