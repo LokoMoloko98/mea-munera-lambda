@@ -8,7 +8,9 @@ from botocore.exceptions import ClientError
 # Initialize DynamoDB
 dynamodb = boto3.resource('dynamodb')
 trips_table_name = "Swift-lift-club-portal-trips"
+users_table_name = "Swift-lift-club-portal-users"
 trips_table = dynamodb.Table(trips_table_name)
+users_table = dynamodb.Table(users_table_name)
 
 def custom_serializer(obj):
     if isinstance(obj, Decimal):
@@ -61,6 +63,20 @@ def get_weekly_trips(passenger_id, target_date):
     except Exception as e:
         print(f"An error occurred: {e}")
         return []
+    
+async def get_passenger_name(passenger_id):
+    """
+    Get passenger name from users table
+    """
+    try:
+        response = users_table.query(
+            KeyConditionExpression=Key('passenger_id').eq(passenger_id)
+        )
+        if 'Item' in response:
+            return response['Item'].get('passenger_name')
+    except Exception as e:
+        print(f"Error getting passenger name: {e}")
+    return None
 
 def lambda_handler(event, context):
     body = {}
@@ -84,6 +100,11 @@ def lambda_handler(event, context):
             status = event.get("queryStringParameters").get("status")
             if not passenger_id or not status:
                 raise ValueError("Missing required fields: passenger_id, status.")
+            
+            # Get passenger name
+            passenger_name = get_passenger_name(passenger_id)
+            if not passenger_name:
+                raise ValueError(f"Passenger with ID {passenger_id} not found in users table")
 
             # Generate trip_date_time automatically
             trip_date_time = generate_trip_date_time()
@@ -93,7 +114,8 @@ def lambda_handler(event, context):
                 Item={
                     "passenger_id": passenger_id,
                     "trip_date_time": trip_date_time,
-                    "status": status
+                    "status": status,
+                    "passenger_name": passenger_name
                 }
             )
             body = {
