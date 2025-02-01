@@ -9,10 +9,11 @@ from datetime import datetime, timedelta
 print("Packages have imported successfully")
 
 # Initialize DynamoDB
-client = boto3.client('dynamodb')
 dynamodb = boto3.resource('dynamodb')
 trips_table_name = "Swift-lift-club-portal-trips"
+users_table_name = "Swift-lift-club-portal-users"
 trips_table = dynamodb.Table(trips_table_name)
+users_table = dynamodb.Table(users_table_name)
 print("DynamoDB Table initialized successfully")
 
 def custom_serializer(obj):
@@ -97,7 +98,7 @@ def calculate_fare(total_trips, missed_trips, weekly_fare):
 
     # Return the result as a dictionary
     return {
-        "total_trips": total_trips,
+        "total_trips_expected": total_trips,
         "missed_trips": missed_trips,
         "discount_threshold": discount_threshold,
         "eligible_missed_trips": eligible_missed_trips,
@@ -105,6 +106,21 @@ def calculate_fare(total_trips, missed_trips, weekly_fare):
         "total_discount": total_discount,
         "final_fare": final_fare
     }
+
+def get_passenger_name(passenger_id):
+    """
+    Get passenger name from users table
+    """
+    try:
+        response = users_table.query(
+            KeyConditionExpression=Key('passenger_id').eq(passenger_id)
+        )
+        if response.get('Items') and len(response['Items']) > 0:
+            return response['Items'][0]['passenger_name']
+        return None
+    except Exception as e:
+        print(f"Error getting passenger name: {e}")
+    return None
 
 def lambda_handler(event, context):
     body = {}
@@ -125,18 +141,34 @@ def lambda_handler(event, context):
         # Fetch trips for the passenger
         weekly_trips = get_weekly_trips(passenger_id, target_week)
         missed_trips_list = [trip for trip in weekly_trips if trip['status'] == 'missed']
+        completed_trips_list = [trip for trip in weekly_trips if trip['status'] == 'completed']
+        completed_trips = len(completed_trips_list)
         missed_trips = len(missed_trips_list)
         total_trips = 10  # Expected Total trips in a week
         print(f"Total trips for the week beginning on {target_week}: {total_trips}, Missed trips: {missed_trips}")
+
+        # Get passenger name
+        passenger_name = get_passenger_name(passenger_id)
+        if not passenger_name:
+            raise ValueError(f"Passenger with ID {passenger_id} not found in users table")
 
         # Calculate the final fare
         result = calculate_fare(total_trips=total_trips, missed_trips=missed_trips, weekly_fare=350) # Default weekly fare is 350 for now, will fetch from users DB later
         final_fare = result['final_fare']
         print(f"Final fare calculated: R{final_fare}")
 
+        body = {}
+        body['passenger_id'] = passenger_id
+        body['passenger_name'] = passenger_name
+        body['total_trips_completed'] = completed_trips
+        body['total_trips_missed'] = missed_trips
+        body['total_trips_expected'] = total_trips
+        body['total_discount'] = result['total_discount']
+        body['final_fare'] = final_fare
+
         return {
             'statusCode': statusCode,
-            'body': json.dumps(result),
+            'body': json.dumps(body, default=custom_serializer),
             'headers': headers
         }
 
@@ -144,7 +176,7 @@ def lambda_handler(event, context):
         print(f"Value error occurred: {ve}")
         return {
             'statusCode': 400,
-            'body': json.dumps(str(ve)),
+            'body': json.dumps(str(ve), default=custom_serializer),
             'headers': headers
         }
 
@@ -152,7 +184,7 @@ def lambda_handler(event, context):
         print(f"Client error occurred: {ce}")
         return {
             'statusCode': 500,
-            'body': json.dumps("Error accessing DynamoDB"),
+            'body': json.dumps("Error accessing DynamoDB", default=custom_serializer),
             'headers': headers
         }
 
@@ -160,6 +192,6 @@ def lambda_handler(event, context):
         print(f"An error occurred: {e}")
         return {
             'statusCode': 500,
-            'body': json.dumps('Error occurred during processing'),
+            'body': json.dumps('Error occurred during processing', default=custom_serializer),
             'headers': headers
         }
