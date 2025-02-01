@@ -91,6 +91,11 @@ def lambda_handler(event, context):
     try:
         print("Processing operation for trips table")
 
+        # Get passenger name
+        passenger_name = get_passenger_name(passenger_id)
+        if not passenger_name:
+            raise ValueError(f"Passenger with ID {passenger_id} not found in users table")
+
         # Extract operation type
         operation = event.get("queryStringParameters").get("operation")
         if operation not in ["add", "update", "get_weekly_trips"]:
@@ -102,11 +107,6 @@ def lambda_handler(event, context):
             status = event.get("queryStringParameters").get("status")
             if not passenger_id or not status:
                 raise ValueError("Missing required fields: passenger_id, status.")
-            
-            # Get passenger name
-            passenger_name = get_passenger_name(passenger_id)
-            if not passenger_name:
-                raise ValueError(f"Passenger with ID {passenger_id} not found in users table")
 
             # Generate trip_date_time automatically
             trip_date_time = generate_trip_date_time()
@@ -161,7 +161,7 @@ def lambda_handler(event, context):
             # Fetch weekly trips
             weekly_trips = get_weekly_trips(passenger_id, target_week)
             body = {
-                "message": f"Weekly trips for passenger_id: {passenger_id} from {target_week}",
+                "message": f"Weekly trips for {passenger_name} for the week beginning on {target_week}",
                 "weekly_trips": weekly_trips
             }
 
