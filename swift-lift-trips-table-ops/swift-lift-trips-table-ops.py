@@ -73,7 +73,7 @@ def get_passenger_name(passenger_id):
             KeyConditionExpression=Key('passenger_id').eq(passenger_id)
         )
         if 'Items' in response:
-            return response['Items'].get('passenger_name')
+            return response['Items']['passenger_name']
     except Exception as e:
         print(f"Error getting passenger name: {e}")
     return None
