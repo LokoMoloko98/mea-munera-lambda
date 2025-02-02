@@ -166,7 +166,7 @@ def lambda_handler(event, context):
             # Fetch weekly trips
             weekly_trips = get_weekly_trips(passenger_id, target_week)
             body = {
-                "message": f"Weekly trips for {passenger_name} for the week beginning on {target_week}",
+                "message": f"Trips for {passenger_name}: Week beginning on {target_week}",
                 "weekly_trips": weekly_trips
             }
 
