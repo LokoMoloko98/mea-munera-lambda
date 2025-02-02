@@ -156,6 +156,11 @@ def lambda_handler(event, context):
         result = calculate_fare(total_trips=total_trips, missed_trips=missed_trips, weekly_fare=350) # Default weekly fare is 350 for now, will fetch from users DB later
         final_fare = result['final_fare']
         print(f"Final fare calculated: R{final_fare}")
+        discount_eligibility = False
+        eligeble_missed_trips = result['eligible_missed_trips']
+        if eligeble_missed_trips > 0:
+            discount_eligibility = True
+            print(f"Eligible missed trips for discount: {eligeble_missed_trips}")
 
         body = {}
         body['passenger_id'] = passenger_id
@@ -165,6 +170,7 @@ def lambda_handler(event, context):
         body['total_trips_expected'] = total_trips
         body['total_trips_recorded'] = completed_trips + missed_trips
         body['discount'] = result['total_discount']
+        body['discount_eligibility'] = discount_eligibility
         body['final_fare'] = final_fare
 
         return {
