@@ -48,7 +48,6 @@ def get_weekly_trips(passenger_id, target_date):
     friday_date_obj = target_date_obj + timedelta(days=4)
     
     # Format dates to ISO 8601 with UTC+2 timezone
-    utc_plus_2 = timezone(timedelta(hours=2))
     start_of_week_iso = target_date_obj.strftime("%Y-%m-%d")
     end_of_week_iso = friday_date_obj.strftime("%Y-%m-%d")
     
