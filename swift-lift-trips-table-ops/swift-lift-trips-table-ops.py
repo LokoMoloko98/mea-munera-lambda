@@ -19,14 +19,14 @@ def custom_serializer(obj):
         return float(obj)  # Convert Decimal to float
     raise TypeError(f"Type {type(obj)} not serializable")
 
-def generate_trip_date():
-    """
-    Generate the current date and time in Central African Time (UTC+2) in ISO 8601 format.
-    Returns:
-        str: The current date and time in ISO 8601 format (e.g., "2025-01-25T16:30:00+02:00").
-    """
-    now = datetime.now().date()
-    return now.isoformat()
+# def generate_trip_date():
+#     """
+#     Generate the current date and time in Central African Time (UTC+2) in ISO 8601 format.
+#     Returns:
+#         str: The current date and time in ISO 8601 format (e.g., "2025-01-25T16:30:00+02:00").
+#     """
+#     now = datetime.now().date()
+#     return now.isoformat()
 
 def get_weekly_trips(passenger_id, target_date):
     """
@@ -117,16 +117,16 @@ def lambda_handler(event, context):
             # Extract passenger_id and status
             passenger_id = event.get("queryStringParameters").get("passenger_id")
             status = event.get("queryStringParameters").get("status")
+            trip_date = event.get("queryStringParameters").get("trip_date")
+            trip_period = event.get("queryStringParameters").get("trip_period")
+
             if not passenger_id or not status:
-                raise ValueError("Missing required fields: passenger_id, status.")
+                raise ValueError("Missing required fields: passenger_id, status, trip_dte or trip_period.")
             
             # Get passenger name
             passenger_name = get_passenger_name(passenger_id)
             if not passenger_name:
                 raise ValueError(f"Passenger with ID {passenger_id} not found in users table")
-
-            # Generate trip_date automatically
-            trip_date = generate_trip_date()
 
             # Generate trop ID
             number = random.randint(10000, 99999)
@@ -145,14 +145,17 @@ def lambda_handler(event, context):
             # Add a new record
             response = trips_table.put_item(
                 Item={
+                    "trip_id": trip_id,
                     "passenger_id": passenger_id,
                     "trip_date": trip_date,
                     "status": status,
-                    "passenger_name": passenger_name
+                    "passenger_name": passenger_name,
+                    "trip_period": trip_period
                 }
             )
             body = {
                 "message": "Record added successfully",
+                "trip_id": trip_id,
                 "trip_date": trip_date,
                 "response": response
             }
