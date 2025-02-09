@@ -24,9 +24,8 @@ def generate_trip_date_time():
     Returns:
         str: The current date and time in ISO 8601 format (e.g., "2025-01-25T16:30:00+02:00").
     """
-    utc_plus_2 = timezone(timedelta(hours=2))
-    now = datetime.now(utc_plus_2)
-    return now.isoformat(timespec="seconds")
+    now = datetime.now().date()
+    return now.isoformat()
 
 def get_weekly_trips(passenger_id, target_date):
     """
@@ -57,7 +56,7 @@ def get_weekly_trips(passenger_id, target_date):
         # Query the table
         response = trips_table.query(
             KeyConditionExpression=Key('passenger_id').eq(passenger_id) & 
-                                   Key('trip_date_time').between(start_of_week_iso, end_of_week_iso)
+                                   Key('trip_date').between(start_of_week_iso, end_of_week_iso)
         )
         return response.get('Items', [])
 
