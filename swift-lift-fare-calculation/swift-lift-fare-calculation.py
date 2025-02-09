@@ -3,7 +3,7 @@ import json
 from math import ceil
 from botocore.exceptions import ClientError
 from decimal import Decimal
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 from datetime import datetime, timedelta
 
 print("Packages have imported successfully")
@@ -24,7 +24,6 @@ def custom_serializer(obj):
 def get_weekly_trips(passenger_id, target_date):
     """
     Get all trips for a passenger from the specified Monday to the following Friday.
-
     Args:
         passenger_id (str): The ID of the passenger.
         target_date (str): A Monday date (in ISO 8601 format, e.g., "2025-01-20").
@@ -33,26 +32,45 @@ def get_weekly_trips(passenger_id, target_date):
     """
     # Parse the target date
     target_date_obj = datetime.fromisoformat(target_date)
-
+    
     # Check if the date is a Monday
     if target_date_obj.weekday() != 0:  # 0 = Monday
         raise ValueError(f"target_date {target_date} is not a Monday. Please provide a Monday.")
-
+    
     # Calculate Friday of the same week
     friday_date_obj = target_date_obj + timedelta(days=4)
-
-    # Format dates to ISO 8601
-    start_of_week_iso = target_date_obj.strftime("%Y-%m-%dT00:00:00Z")
-    end_of_week_iso = friday_date_obj.strftime("%Y-%m-%dT23:59:59Z")
-
+    
+    # Format dates to ISO 8601 with UTC+2 timezone
+    start_of_week_iso = target_date_obj.strftime("%Y-%m-%d")
+    end_of_week_iso = friday_date_obj.strftime("%Y-%m-%d")
+    
     try:
-        # Query the table
-        response = trips_table.query(
-            KeyConditionExpression=Key('passenger_id').eq(passenger_id) & 
-                                   Key('trip_date_time').between(start_of_week_iso, end_of_week_iso)
-        )
-        return response.get('Items', [])
-
+        all_items = []
+        last_evaluated_key = None
+        
+        while True:
+            if last_evaluated_key:
+                response = trips_table.scan(
+                    FilterExpression=
+                        Attr('passenger_id').eq(passenger_id) & 
+                        Attr('trip_date').between(start_of_week_iso, end_of_week_iso),
+                    ExclusiveStartKey=last_evaluated_key
+                )
+            else:
+                response = trips_table.scan(
+                    FilterExpression=
+                        Attr('passenger_id').eq(passenger_id) & 
+                        Attr('trip_date').between(start_of_week_iso, end_of_week_iso)
+                )
+            
+            all_items.extend(response.get('Items', []))
+            
+            last_evaluated_key = response.get('LastEvaluatedKey')
+            if not last_evaluated_key:
+                break
+                
+        return all_items
+        
     except Exception as e:
         print(f"An error occurred: {e}")
         return []

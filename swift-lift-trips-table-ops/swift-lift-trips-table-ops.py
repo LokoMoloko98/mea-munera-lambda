@@ -1,9 +1,10 @@
 import boto3
 import json
 from datetime import datetime, timedelta, timezone
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 from decimal import Decimal
 from botocore.exceptions import ClientError
+import random
 
 # Initialize DynamoDB
 dynamodb = boto3.resource('dynamodb')
@@ -18,7 +19,7 @@ def custom_serializer(obj):
         return float(obj)  # Convert Decimal to float
     raise TypeError(f"Type {type(obj)} not serializable")
 
-def generate_trip_date_time():
+def generate_trip_date():
     """
     Generate the current date and time in Central African Time (UTC+2) in ISO 8601 format.
     Returns:
@@ -30,7 +31,6 @@ def generate_trip_date_time():
 def get_weekly_trips(passenger_id, target_date):
     """
     Get all trips for a passenger from the specified Monday to the following Friday.
-
     Args:
         passenger_id (str): The ID of the passenger.
         target_date (str): A Monday date (in ISO 8601 format, e.g., "2025-01-20").
@@ -39,27 +39,46 @@ def get_weekly_trips(passenger_id, target_date):
     """
     # Parse the target date
     target_date_obj = datetime.fromisoformat(target_date)
-
+    
     # Check if the date is a Monday
     if target_date_obj.weekday() != 0:  # 0 = Monday
         raise ValueError(f"target_date {target_date} is not a Monday. Please provide a Monday.")
-
+    
     # Calculate Friday of the same week
     friday_date_obj = target_date_obj + timedelta(days=4)
-
+    
     # Format dates to ISO 8601 with UTC+2 timezone
     utc_plus_2 = timezone(timedelta(hours=2))
-    start_of_week_iso = target_date_obj.replace(tzinfo=utc_plus_2).strftime("%Y-%m-%dT00:00:00%z")
-    end_of_week_iso = friday_date_obj.replace(tzinfo=utc_plus_2).strftime("%Y-%m-%dT23:59:59%z")
-
+    start_of_week_iso = target_date_obj.strftime("%Y-%m-%d")
+    end_of_week_iso = friday_date_obj.strftime("%Y-%m-%d")
+    
     try:
-        # Query the table
-        response = trips_table.query(
-            KeyConditionExpression=Key('passenger_id').eq(passenger_id) & 
-                                   Key('trip_date').between(start_of_week_iso, end_of_week_iso)
-        )
-        return response.get('Items', [])
-
+        all_items = []
+        last_evaluated_key = None
+        
+        while True:
+            if last_evaluated_key:
+                response = trips_table.scan(
+                    FilterExpression=
+                        Attr('passenger_id').eq(passenger_id) & 
+                        Attr('trip_date').between(start_of_week_iso, end_of_week_iso),
+                    ExclusiveStartKey=last_evaluated_key
+                )
+            else:
+                response = trips_table.scan(
+                    FilterExpression=
+                        Attr('passenger_id').eq(passenger_id) & 
+                        Attr('trip_date').between(start_of_week_iso, end_of_week_iso)
+                )
+            
+            all_items.extend(response.get('Items', []))
+            
+            last_evaluated_key = response.get('LastEvaluatedKey')
+            if not last_evaluated_key:
+                break
+                
+        return all_items
+        
     except Exception as e:
         print(f"An error occurred: {e}")
         return []
@@ -107,37 +126,51 @@ def lambda_handler(event, context):
             if not passenger_name:
                 raise ValueError(f"Passenger with ID {passenger_id} not found in users table")
 
-            # Generate trip_date_time automatically
-            trip_date_time = generate_trip_date_time()
+            # Generate trip_date automatically
+            trip_date = generate_trip_date()
 
+            # Generate trop ID
+            number = random.randint(10000, 99999)
+
+            # Check if trip ID already exists
+            trip_id = f"tr-{number}"
+            existing_trip = trips_table.get_item(
+                Key={
+                    "trip_id": trip_id,
+                    "passenger_id": passenger_id
+                }
+            )
+            if 'Item' in existing_trip:
+                raise ValueError(f"Trip with ID {trip_id} already exists.")
+            
             # Add a new record
             response = trips_table.put_item(
                 Item={
                     "passenger_id": passenger_id,
-                    "trip_date_time": trip_date_time,
+                    "trip_date": trip_date,
                     "status": status,
                     "passenger_name": passenger_name
                 }
             )
             body = {
                 "message": "Record added successfully",
-                "trip_date_time": trip_date_time,
+                "trip_date": trip_date,
                 "response": response
             }
 
         elif operation == "update":
             # Extract required fields for updates
             passenger_id = event.get("queryStringParameters").get("passenger_id")
-            trip_date_time = event.get("queryStringParameters").get("trip_date_time")
+            trip_date = event.get("queryStringParameters").get("trip_date")
             status = event.get("queryStringParameters").get("status")
-            if not passenger_id or not trip_date_time or not status:
-                raise ValueError("Missing required fields: passenger_id, trip_date_time, status.")
+            if not passenger_id or not trip_date or not status:
+                raise ValueError("Missing required fields: passenger_id, trip_date, status.")
 
             # Update an existing record
             response = trips_table.update_item(
                 Key={
                     "passenger_id": passenger_id,
-                    "trip_date_time": trip_date_time
+                    "trip_date": trip_date
                 },
                 UpdateExpression="SET #st = :status",
                 ExpressionAttributeNames={
