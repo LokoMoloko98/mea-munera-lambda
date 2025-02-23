@@ -1,11 +1,11 @@
-name: lift-club-lambda CI-CD
+name: music-catalogue-users CI-CD
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'lift-club-lambda/**' # Run only if changes are in lift-club-lambda directory
+      - 'music-catalogue-users/**' # Run only if changes are in music-catalogue-users directory
 
 jobs:
   release:
@@ -20,7 +20,7 @@ jobs:
       - name: Read Current Version
         id: read_version
         run: |
-          VERSION=$(jq -r '."lift-club-lambda"' versions.json)
+          VERSION=$(jq -r '."music-catalogue-users"' versions.json)
           echo "Current version: $VERSION"
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
       
@@ -38,8 +38,8 @@ jobs:
       # 4. Create a zip file for the directory
       - name: Zip Directory
         run: |
-          ZIP_NAME=lift-club-lambda-${{ env.NEW_VERSION }}.zip
-          cd lift-club-lambda
+          ZIP_NAME=music-catalogue-users-${{ env.NEW_VERSION }}.zip
+          cd music-catalogue-users
           zip -r ../$ZIP_NAME ./*
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
@@ -53,7 +53,7 @@ jobs:
       # 5.2 Back up release version to s3
       - name: Upload File
         run: |
-          aws s3 cp ${{ env.ZIP_NAME }} s3://mea-munera-lambda/lift-club-lambda/
+          aws s3 cp ${{ env.ZIP_NAME }} s3://mea-munera-lambda/music-catalogue-users/
 
       # 6. Release the lambda function code
       # - name: AWS CLI v2
@@ -70,7 +70,7 @@ jobs:
       # 7. Update the versions.json file in the root
       - name: Update Versions JSON
         run: |
-          jq --arg version "${{ env.NEW_VERSION }}" '."lift-club-lambda" = $version' versions.json > versions.json.tmp
+          jq --arg version "${{ env.NEW_VERSION }}" '."music-catalogue-users" = $version' versions.json > versions.json.tmp
           mv versions.json.tmp versions.json
           cat versions.json
 
@@ -80,5 +80,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add versions.json
-          git commit -m "Update lift-club-lambda version to ${{ env.NEW_VERSION }}"
+          git commit -m "Update music-catalogue-users version to ${{ env.NEW_VERSION }}"
           git push
