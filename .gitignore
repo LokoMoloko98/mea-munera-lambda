@@ -1,2 +1,5 @@
 test-stuff/*
 versions.json
+
+swift-lift-trips-26-02-2025-dynamodb_backup.json
+swift-lift-users-26-02-2025-dynamodb_backup.json
