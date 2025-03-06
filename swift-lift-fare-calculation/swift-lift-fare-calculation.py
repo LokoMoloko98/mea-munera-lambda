@@ -92,7 +92,7 @@ def lambda_handler(event, context):
             'statusCode': 200,
             'body': json.dumps({
                 'passenger_id': passenger_id,
-                'target_week': target_week,
+                'week_starting_on': target_week,
                 'passenger_name': passenger_info.get('passenger_name', 'Unknown'),
                 'passenger_type': passenger_type,
                 'trips_completed': completed_trips,
