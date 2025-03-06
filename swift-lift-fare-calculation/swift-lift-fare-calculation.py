@@ -57,7 +57,7 @@ def calculate_fare(passenger_type, completed_trips, missed_trips):
     total_discount = eligible_missed_trips * discount_per_trip
     final_fare = max(weekly_fare - total_discount, 0)
     
-    return final_fare
+    return [final_fare, total_discount, eligible_missed_trips]
 
 def get_passenger_info(passenger_id):
     try:
@@ -87,6 +87,15 @@ def lambda_handler(event, context):
         missed_trips = sum(1 for trip in weekly_trips if trip['status'] == 'missed')
         
         final_fare = calculate_fare(passenger_type, completed_trips, missed_trips)
+
+        discount_eligibility = ""
+        eligeble_missed_trips = final_fare[2]
+        if eligeble_missed_trips > 0:
+            discount_eligibility = "Eligible for discount"
+            print(f"Eligible missed trips for discount: {eligeble_missed_trips}")
+        else:
+            discount_eligibility = "Not eligible for discount"
+            print("Not eligible for discount")
         
         return {
             'statusCode': 200,
@@ -97,7 +106,9 @@ def lambda_handler(event, context):
                 'passenger_type': passenger_type,
                 'trips_completed': completed_trips,
                 'trips_missed': missed_trips,
-                'final_fare': final_fare
+                'discount': final_fare[1],
+                'discount_eligibility': discount_eligibility,
+                'final_fare': final_fare[0]
             }, default=custom_serializer),
             'headers': {"Content-Type": "application/json"}
         }
