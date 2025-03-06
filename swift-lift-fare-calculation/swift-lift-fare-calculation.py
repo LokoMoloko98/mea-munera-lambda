@@ -8,218 +8,103 @@ from datetime import datetime, timedelta
 
 print("Packages have imported successfully")
 
-# Initialize DynamoDB
 dynamodb = boto3.resource('dynamodb')
-trips_table_name = "Swift-lift-club-portal-trips"
-users_table_name = "Swift-lift-club-portal-users"
-trips_table = dynamodb.Table(trips_table_name)
-users_table = dynamodb.Table(users_table_name)
-print("DynamoDB Table initialized successfully")
+trips_table = dynamodb.Table("Swift-lift-club-portal-trips")
+users_table = dynamodb.Table("Swift-lift-club-portal-users")
+
+print("DynamoDB Tables initialized successfully")
 
 def custom_serializer(obj):
     if isinstance(obj, Decimal):
-        return float(obj)  # Convert Decimal to float
+        return float(obj)
     raise TypeError(f"Type {type(obj)} not serializable")
 
 def get_weekly_trips(passenger_id, target_date):
-    """
-    Get all trips for a passenger from the specified Monday to the following Friday.
-    Args:
-        passenger_id (str): The ID of the passenger.
-        target_date (str): A Monday date (in ISO 8601 format, e.g., "2025-01-20").
-    Returns:
-        list: A list of trips for the specified week.
-    """
-    # Parse the target date
     target_date_obj = datetime.fromisoformat(target_date)
+    if target_date_obj.weekday() != 0:
+        raise ValueError(f"target_date {target_date} is not a Monday.")
     
-    # Check if the date is a Monday
-    if target_date_obj.weekday() != 0:  # 0 = Monday
-        raise ValueError(f"target_date {target_date} is not a Monday. Please provide a Monday.")
-    
-    # Calculate Friday of the same week
     friday_date_obj = target_date_obj + timedelta(days=4)
-    
-    # Format dates to ISO 8601 with UTC+2 timezone
     start_of_week_iso = target_date_obj.strftime("%Y-%m-%d")
     end_of_week_iso = friday_date_obj.strftime("%Y-%m-%d")
     
     try:
-        all_items = []
-        last_evaluated_key = None
-        
-        while True:
-            if last_evaluated_key:
-                response = trips_table.scan(
-                    FilterExpression=
-                        Attr('passenger_id').eq(passenger_id) & 
-                        Attr('trip_date').between(start_of_week_iso, end_of_week_iso),
-                    ExclusiveStartKey=last_evaluated_key
-                )
-            else:
-                response = trips_table.scan(
-                    FilterExpression=
-                        Attr('passenger_id').eq(passenger_id) & 
-                        Attr('trip_date').between(start_of_week_iso, end_of_week_iso)
-                )
-            
-            all_items.extend(response.get('Items', []))
-            
-            last_evaluated_key = response.get('LastEvaluatedKey')
-            if not last_evaluated_key:
-                break
-                
-        return all_items
-        
+        response = trips_table.scan(
+            FilterExpression=
+                Attr('passenger_id').eq(passenger_id) & 
+                Attr('trip_date').between(start_of_week_iso, end_of_week_iso)
+        )
+        return response.get('Items', [])
     except Exception as e:
         print(f"An error occurred: {e}")
         return []
 
-
-def calculate_fare(total_trips, missed_trips, weekly_fare):
-    """
-    Calculate the final fare for a passenger based on total trips, missed trips,
-    and discount rules.
-
-    Args:
-        total_trips (int): The total number of trips in a week.
-        missed_trips (int): The number of trips missed by the passenger.
-        weekly_fare (float): The standard weekly fare (default: 350).
-
-    Returns:
-        dict: A dictionary containing details about the fare calculation.
-    """
-    if total_trips <= 0:
-        raise ValueError("Total trips must be greater than 0.")
-    if missed_trips < 0:
-        raise ValueError("Missed trips cannot be negative.")
-    if missed_trips > total_trips:
-        raise ValueError("Missed trips cannot exceed total trips.")
-
-    # Calculate the threshold for discounts (40% of total trips)
-    discount_threshold = ceil(total_trips * 0.4)
-
-    # Determine eligible missed trips for discount
+def calculate_fare(passenger_type, completed_trips, missed_trips):
+    if passenger_type == "long-term":
+        weekly_fare = 350
+    elif passenger_type == "long-distance":
+        weekly_fare = 450
+    elif passenger_type == "per-trip":
+        return completed_trips * 35  # R35 per completed trip
+    elif passenger_type == "defunct":
+        return 0  # No fare for defunct passengers
+    else:
+        raise ValueError("Unknown passenger type")
+    
+    discount_threshold = ceil(10 * 0.4)
     eligible_missed_trips = max(0, missed_trips - discount_threshold)
-
-    # Discount per trip (15% of the weekly fare per missed trip)
     discount_per_trip = weekly_fare * 0.15
     total_discount = eligible_missed_trips * discount_per_trip
+    final_fare = max(weekly_fare - total_discount, 0)
+    
+    return final_fare
 
-    # Calculate the final fare
-    final_fare = weekly_fare - total_discount
-    final_fare = max(final_fare, 0)  # Ensure fare is not negative
-
-    if total_trips == missed_trips:
-        final_fare = 0
-        total_discount = 0
-
-    # Return the result as a dictionary
-    return {
-        "total_trips_expected": total_trips,
-        "missed_trips": missed_trips,
-        "discount_threshold": discount_threshold,
-        "eligible_missed_trips": eligible_missed_trips,
-        "discount_per_trip": discount_per_trip,
-        "total_discount": total_discount,
-        "final_fare": final_fare
-    }
-
-def get_passenger_name(passenger_id):
-    """
-    Get passenger name from users table
-    """
+def get_passenger_info(passenger_id):
     try:
-        response = users_table.query(
-            KeyConditionExpression=Key('passenger_id').eq(passenger_id)
-        )
-        if response.get('Items') and len(response['Items']) > 0:
-            return response['Items'][0]['passenger_name']
+        response = users_table.query(KeyConditionExpression=Key('passenger_id').eq(passenger_id))
+        if response.get('Items'):
+            return response['Items'][0]
         return None
     except Exception as e:
-        print(f"Error getting passenger name: {e}")
-    return None
+        print(f"Error fetching passenger info: {e}")
+        return None
 
 def lambda_handler(event, context):
-    body = {}
-    statusCode = 200
-    headers = {
-        "Content-Type": "application/json"
-    }
     try:
-        print("Processing")
-        # print(f"Received event: {json.dumps(event, indent=4, default=custom_serializer)}")
-        # Extract passenger_id and total trips from the event
-        passenger_id = event.get("queryStringParameters").get('passenger_id')
-        target_week = event.get("queryStringParameters").get('target_week')
+        passenger_id = event.get("queryStringParameters", {}).get('passenger_id')
+        target_week = event.get("queryStringParameters", {}).get('target_week')
         if not passenger_id or not target_week:
-            raise ValueError("passenger_id and target_week must be provided")
-        print(f"Calculating fare for Passenger ID: {passenger_id}, for the week beginning on: {target_week}")
-
-        # Fetch trips for the passenger
+            raise ValueError("passenger_id and target_week are required")
+        
+        passenger_info = get_passenger_info(passenger_id)
+        if not passenger_info:
+            raise ValueError(f"Passenger with ID {passenger_id} not found")
+        
+        passenger_type = passenger_info.get("passenger_type", "unknown").lower()
         weekly_trips = get_weekly_trips(passenger_id, target_week)
-        missed_trips_list = [trip for trip in weekly_trips if trip['status'] == 'missed']
-        completed_trips_list = [trip for trip in weekly_trips if trip['status'] == 'completed']
-        completed_trips = len(completed_trips_list)
-        missed_trips = len(missed_trips_list)
-        total_trips = 10  # Expected Total trips in a week
-        print(f"Trips for {target_week}: Completed trips: {total_trips}, Missed trips: {missed_trips}")
-
-        # Get passenger name
-        passenger_name = get_passenger_name(passenger_id)
-        if not passenger_name:
-            raise ValueError(f"Passenger with ID {passenger_id} not found in users table")
-
-        # Calculate the final fare
-        result = calculate_fare(total_trips=total_trips, missed_trips=missed_trips, weekly_fare=350) # Default weekly fare is 350 for now, will fetch from users DB later
-        final_fare = result['final_fare']
-        print(f"Final fare calculated: R{final_fare}")
-        discount_eligibility = ""
-        eligeble_missed_trips = result['eligible_missed_trips']
-        if eligeble_missed_trips > 0:
-            discount_eligibility = "Eligible for discount"
-            print(f"Eligible missed trips for discount: {eligeble_missed_trips}")
-        else:
-            discount_eligibility = "Not eligible for discount"
-            print("Not eligible for discount")
-
-        body = {}
-        body['passenger_id'] = passenger_id
-        body['passenger_name'] = passenger_name
-        body['trips_completed'] = completed_trips
-        body['trips_missed'] = missed_trips
-        body['total_trips_expected'] = total_trips
-        body['total_trips_recorded'] = completed_trips + missed_trips
-        body['discount'] = result['total_discount']
-        body['discount_eligibility'] = discount_eligibility
-        body['final_fare'] = final_fare
-
+        
+        completed_trips = sum(1 for trip in weekly_trips if trip['status'] == 'completed')
+        missed_trips = sum(1 for trip in weekly_trips if trip['status'] == 'missed')
+        
+        final_fare = calculate_fare(passenger_type, completed_trips, missed_trips)
+        
         return {
-            'statusCode': statusCode,
-            'body': json.dumps(body, default=custom_serializer),
-            'headers': headers
+            'statusCode': 200,
+            'body': json.dumps({
+                'passenger_id': passenger_id,
+                'target_week': target_week,
+                'passenger_name': passenger_info.get('passenger_name', 'Unknown'),
+                'passenger_type': passenger_type,
+                'trips_completed': completed_trips,
+                'trips_missed': missed_trips,
+                'final_fare': final_fare
+            }, default=custom_serializer),
+            'headers': {"Content-Type": "application/json"}
         }
-
-    except ValueError as ve:
-        print(f"Value error occurred: {ve}")
-        return {
-            'statusCode': 400,
-            'body': json.dumps(str(ve), default=custom_serializer),
-            'headers': headers
-        }
-
-    except ClientError as ce:
-        print(f"Client error occurred: {ce}")
-        return {
-            'statusCode': 500,
-            'body': json.dumps("Error accessing DynamoDB", default=custom_serializer),
-            'headers': headers
-        }
-
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"Error: {e}")
         return {
             'statusCode': 500,
-            'body': json.dumps('Error occurred during processing', default=custom_serializer),
-            'headers': headers
+            'body': json.dumps(str(e)),
+            'headers': {"Content-Type": "application/json"}
         }
