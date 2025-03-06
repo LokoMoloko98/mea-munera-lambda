@@ -3,6 +3,7 @@ import requests
 import json
 import os
 from jinja2 import Template
+import resend
 
 # Load Resend API key from environment variable
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
@@ -21,7 +22,7 @@ def send_email(recipient, subject, body):
         "Content-Type": "application/json",
     }
     payload = {
-        "from": "no-reply@yourdomain.com",
+        "from": "no-reply@no-reply.moloko-mokubedi.co.za.com",
         "to": [recipient],
         "subject": subject,
         "text": body,
