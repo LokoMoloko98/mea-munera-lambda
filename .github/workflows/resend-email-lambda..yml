@@ -1,0 +1,84 @@
+name: resend-email-lambda CI-CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'resend-email-lambda/**' # Run only if changes are in resend-email-lambda directory
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+       # 1. Checkout the code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # 2. Read current version from versions.json
+      - name: Read Current Version
+        id: read_version
+        run: |
+          VERSION=$(jq -r '."resend-email-lambda"' versions.json)
+          echo "Current version: $VERSION"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+      
+      # 3. Increment the patch version
+      - name: Increment Patch Version
+        id: increment_version
+        run: |
+          OLD_VERSION=${{ env.VERSION }}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$OLD_VERSION"
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
+          echo "New version: $NEW_VERSION"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+      # 4. Create a zip file for the directory
+      - name: Zip Directory
+        run: |
+          ZIP_NAME=resend-email-lambda-${{ env.NEW_VERSION }}.zip
+          cd resend-email-lambda
+          zip -r ../$ZIP_NAME ./*
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+      # 5.1 Authenticate to AWS
+      - name: Authenticate to AWS
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      # 5.2 Back up release version to s3
+      - name: Upload File
+        run: |
+          aws s3 cp ${{ env.ZIP_NAME }} s3://mea-munera-lambda/resend-email-lambda/
+      
+      # 6. Deploy the lambda function code
+      - name: Deploy the lambda function code
+        uses: imehedi/actions-awscli-v2@latest
+        with:
+          args: "lambda update-function-code \
+            --function-name resend-email-lambda \
+            --zip-file fileb://${{ env.ZIP_NAME }}"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: "us-east-1"
+
+      # 7. Update the versions.json file in the root
+      - name: Update Versions JSON
+        run: |
+          jq --arg version "${{ env.NEW_VERSION }}" '."resend-email-lambda" = $version' versions.json > versions.json.tmp
+          mv versions.json.tmp versions.json
+          cat versions.json
+
+      # 8. Commit and Push the updated versions.json
+      - name: Commit Versions JSON
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add versions.json
+          git commit -m "Update resend-email-lambda version to ${{ env.NEW_VERSION }}"
+          git push

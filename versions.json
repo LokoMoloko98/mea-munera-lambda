@@ -5,5 +5,6 @@
   "swift-lift-trips-table-ops": "1.0.19",
   "swift-lift-user-profile": "1.0.0",
   "music-catalogue-users": "1.0.1",
-  "music-catalogue-table-ops": "1.0.1"
+  "music-catalogue-table-ops": "1.0.1",
+  "resend-email-lambda": "1.0.0",
 }
