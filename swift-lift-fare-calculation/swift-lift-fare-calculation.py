@@ -45,7 +45,7 @@ def calculate_fare(passenger_type, completed_trips, missed_trips):
     elif passenger_type == "long-distance":
         weekly_fare = 450
     elif passenger_type == "per-trip":
-        return [completed_trips * 35, "N/A"]  # R35 per completed trip
+        return [completed_trips * 35, "-"]  # R35 per completed trip
     elif passenger_type == "defunct":
         return 0  # No fare for defunct passengers
     else:
