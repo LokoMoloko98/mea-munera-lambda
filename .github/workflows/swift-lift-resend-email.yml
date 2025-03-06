@@ -1,11 +1,11 @@
-name: resend-email-lambda CI-CD
+name: swift-lift-resend-email CI-CD
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'resend-email-lambda/**' # Run only if changes are in resend-email-lambda directory
+      - 'swift-lift-resend-email/**' # Run only if changes are in swift-lift-resend-email directory
 
 jobs:
   release:
@@ -20,7 +20,7 @@ jobs:
       - name: Read Current Version
         id: read_version
         run: |
-          VERSION=$(jq -r '."resend-email-lambda"' versions.json)
+          VERSION=$(jq -r '."swift-lift-resend-email"' versions.json)
           echo "Current version: $VERSION"
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
       
@@ -38,8 +38,8 @@ jobs:
       # 4. Create a zip file for the directory
       - name: Zip Directory
         run: |
-          ZIP_NAME=resend-email-lambda-${{ env.NEW_VERSION }}.zip
-          cd resend-email-lambda
+          ZIP_NAME=swift-lift-resend-email-${{ env.NEW_VERSION }}.zip
+          cd swift-lift-resend-email
           zip -r ../$ZIP_NAME ./*
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
@@ -53,14 +53,14 @@ jobs:
       # 5.2 Back up release version to s3
       - name: Upload File
         run: |
-          aws s3 cp ${{ env.ZIP_NAME }} s3://mea-munera-lambda/resend-email-lambda/
+          aws s3 cp ${{ env.ZIP_NAME }} s3://mea-munera-lambda/swift-lift-resend-email/
       
       # 6. Deploy the lambda function code
       - name: Deploy the lambda function code
         uses: imehedi/actions-awscli-v2@latest
         with:
           args: "lambda update-function-code \
-            --function-name resend-email-lambda \
+            --function-name swift-lift-resend-email \
             --zip-file fileb://${{ env.ZIP_NAME }}"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -70,7 +70,7 @@ jobs:
       # 7. Update the versions.json file in the root
       - name: Update Versions JSON
         run: |
-          jq --arg version "${{ env.NEW_VERSION }}" '."resend-email-lambda" = $version' versions.json > versions.json.tmp
+          jq --arg version "${{ env.NEW_VERSION }}" '."swift-lift-resend-email" = $version' versions.json > versions.json.tmp
           mv versions.json.tmp versions.json
           cat versions.json
 
@@ -80,5 +80,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add versions.json
-          git commit -m "Update resend-email-lambda version to ${{ env.NEW_VERSION }}"
+          git commit -m "Update swift-lift-resend-email version to ${{ env.NEW_VERSION }}"
           git push
