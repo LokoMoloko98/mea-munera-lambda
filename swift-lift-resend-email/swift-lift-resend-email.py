@@ -38,8 +38,9 @@ def lambda_handler(event, context):
     """Lambda function entry point"""
     print(f"Received event: {json.dumps(event, indent=4, default=custom_serializer)}")
     try:
-        email_type =   event.get("body").get("email_type")
-        data = event["data"]
+        body = json.loads(event.get("body", "{}")) 
+        email_type = body.get("email_type")
+        data = body.get("data", {})
 
         # Ensure valid email type
         if email_type not in EMAIL_TEMPLATES:
@@ -50,12 +51,17 @@ def lambda_handler(event, context):
         email_body = template.render(data)
 
         # Determine subject based on email type
-        subject = "Contact Form Message" if email_type == "contact_form" else "Trip Notification"
+        subject =""
+        if email_type == "contact_form":
+            subject = "Swift Lift Club Interest..."
+            recipient = "communication@moloko-mokubedi.co.za"
+        elif email_type == "Trip Notification":
+            subject = "Trip Notification"
 
         # Send email
         response = send_email(recipient, subject, email_body)
 
-        return {"statusCode": 200, "body": json.dumps(response)}
+        return {"statusCode": 200, "body": json.dumps(response, indent=4, default=custom_serializer)}
 
     except Exception as e:
         return {"statusCode": 500, "body": json.dumps(str(e))}

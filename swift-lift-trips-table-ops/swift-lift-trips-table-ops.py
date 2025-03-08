@@ -101,8 +101,8 @@ def lambda_handler(event, context):
 
         # Extract operation type
         operation = event.get("queryStringParameters").get("operation")
-        if operation not in ["add", "update", "get_weekly_trips"]:
-            raise ValueError("Invalid operation. Must be 'add', 'update', or 'get_weekly_trips'.")
+        if operation not in ["add", "get_weekly_trips"]:
+            raise ValueError("Invalid operation. Must be 'add' or 'get_weekly_trips'.")
 
         if operation == "add":
             # Extract passenger_id and status
