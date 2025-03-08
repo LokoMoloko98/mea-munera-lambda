@@ -19,15 +19,6 @@ def custom_serializer(obj):
         return float(obj)  # Convert Decimal to float
     raise TypeError(f"Type {type(obj)} not serializable")
 
-# def generate_trip_date():
-#     """
-#     Generate the current date and time in Central African Time (UTC+2) in ISO 8601 format.
-#     Returns:
-#         str: The current date and time in ISO 8601 format (e.g., "2025-01-25T16:30:00+02:00").
-#     """
-#     now = datetime.now().date()
-#     return now.isoformat()
-
 def get_weekly_trips(passenger_id, target_date):
     """
     Get all trips for a passenger from the specified Monday to the following Friday.
@@ -159,31 +150,6 @@ def lambda_handler(event, context):
                 "trip_date": trip_date,
                 "response": response
             }
-
-        elif operation == "update":
-            # Extract required fields for updates
-            passenger_id = event.get("queryStringParameters").get("passenger_id")
-            trip_date = event.get("queryStringParameters").get("trip_date")
-            status = event.get("queryStringParameters").get("status")
-            if not passenger_id or not trip_date or not status:
-                raise ValueError("Missing required fields: passenger_id, trip_date, status.")
-
-            # Update an existing record
-            response = trips_table.update_item(
-                Key={
-                    "passenger_id": passenger_id,
-                    "trip_date": trip_date
-                },
-                UpdateExpression="SET #st = :status",
-                ExpressionAttributeNames={
-                    "#st": "status"
-                },
-                ExpressionAttributeValues={
-                    ":status": status
-                },
-                ReturnValues="UPDATED_NEW"
-            )
-            body = {"message": "Record updated successfully", "response": response}
 
         elif operation == "get_weekly_trips":
             # Extract required fields for getting weekly trips
