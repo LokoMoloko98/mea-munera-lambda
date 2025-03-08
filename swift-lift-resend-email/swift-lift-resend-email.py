@@ -38,7 +38,7 @@ def lambda_handler(event, context):
     """Lambda function entry point"""
     print(f"Received event: {json.dumps(event, indent=4, default=custom_serializer)}")
     try:
-        email_type =   event.get("queryStringParameters").get("email_type")
+        email_type =   event.get("body").get("email_type")
         data = event["data"]
 
         # Ensure valid email type
