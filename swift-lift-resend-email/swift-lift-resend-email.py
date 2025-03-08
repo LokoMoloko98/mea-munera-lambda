@@ -2,16 +2,21 @@ import requests
 import json
 import os
 from jinja2 import Template
+from decimal import Decimal
 
 # Load Resend API key from environment variable
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 
+def custom_serializer(obj):
+    if isinstance(obj, Decimal):
+        return float(obj)  # Convert Decimal to float
+    raise TypeError(f"Type {type(obj)} not serializable")
+
 # Define email templates
 EMAIL_TEMPLATES = {
-    "contact_form": "New message from {{ name }} ({{ email }}):\n\n{{ message }}",
+    "contact_form": "New message from {{ name }}\n\nEmail: {{ email }}\n\nCell Number {{ contact_number }}:\n\nMessage: {{ message }}",
     "passenger_notification": "Dear {{ passenger_name }},\n\nYour trip details have changed:\n\n{{ details }}\n\nThanks!",
 }
-
 def send_email(recipient, subject, body):
     """Send an email via Resend API"""
     url = "https://api.resend.com/emails"
@@ -20,7 +25,7 @@ def send_email(recipient, subject, body):
         "Content-Type": "application/json",
     }
     payload = {
-        "from": "no-reply@no-reply.moloko-mokubedi.co.za.com",
+        "from": "swift-lift-club@no-reply.moloko-mokubedi.co.za",
         "to": [recipient],
         "subject": subject,
         "text": body,
@@ -31,9 +36,9 @@ def send_email(recipient, subject, body):
 
 def lambda_handler(event, context):
     """Lambda function entry point"""
+    print(f"Received event: {json.dumps(event, indent=4, default=custom_serializer)}")
     try:
-        recipient = event["recipient"]
-        email_type = event["email_type"]
+        email_type =   event.get("queryStringParameters").get("email_type")
         data = event["data"]
 
         # Ensure valid email type
