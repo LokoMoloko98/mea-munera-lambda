@@ -62,7 +62,15 @@ def lambda_handler(event, context):
         # Send email
         response = send_email(recipient, subject, email_body)
 
-        return {"statusCode": 200, "body": json.dumps(response, indent=4, default=custom_serializer)}
+        return {
+            "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
+            },
+            "body": json.dumps(response, indent=4, default=custom_serializer)
+        }
 
     except Exception as e:
         return {"statusCode": 500, "body": json.dumps(str(e))}
