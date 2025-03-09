@@ -14,8 +14,8 @@ def custom_serializer(obj):
 
 # Define email templates
 EMAIL_TEMPLATES = {
-    "contact_form": "New message from {{ name }}\n\nEmail: {{ email }}\n\nCell Number {{ contact_number }}:\n\nMessage: {{ message }}",
-    "passenger_notification": "Dear {{ passenger_name }},\n\nYour trip details have changed:\n\n{{ details }}\n\nThanks!",
+    "contact_form": "New message from {{ name }}\n\nEmail: {{ email }}\n\nCell Number: {{ contact_number }}:\n\nMessage: {{ message }}",
+    "trip_notification": "Dear {{ passenger_name }},\n\nA Swift Lift Club trip has been recorded under your profile:\n\nDate: {{ trip_date }}\n\nTime Period: {{ trip_period }}\n\nStatus: {{ status }}\n\nThanks!",
 }
 def send_email(recipient, subject, body):
     """Send an email via Resend API"""
@@ -55,8 +55,9 @@ def lambda_handler(event, context):
         if email_type == "contact_form":
             subject = "Swift Lift Club Interest..."
             recipient = "communication@moloko-mokubedi.co.za"
-        elif email_type == "Trip Notification":
-            subject = "Trip Notification"
+        elif email_type == "trip_notification":
+            recipient = data.get("passenger_email")
+            subject = "Swift Lift Club Trip Notification"
 
         # Send email
         response = send_email(recipient, subject, email_body)
