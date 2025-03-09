@@ -14,7 +14,7 @@ def custom_serializer(obj):
 
 # Define email templates
 EMAIL_TEMPLATES = {
-    "contact_form": "New message from {{ name }}\n\nEmail: {{ email }}\n\nCell Number: {{ contact_number }}:\n\nMessage: {{ message }}",
+    "contact_form": "New message from {{ name }}\n\nEmail: {{ email }}\n\nCell Number: {{ contact_number }}\n\nMessage: {{ message }}",
     "trip_notification": "Dear {{ passenger_name }},\n\nA Swift Lift Club trip has been recorded under your profile:\n\nDate: {{ trip_date }}\nTime Period: {{ trip_period }}\nStatus: {{ status }}\n\nThank you for using Swift Lift Club!",
 }
 def send_email(recipient, subject, body):
