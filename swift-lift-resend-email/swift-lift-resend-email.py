@@ -15,7 +15,7 @@ def custom_serializer(obj):
 # Define email templates
 EMAIL_TEMPLATES = {
     "contact_form": "New message from {{ name }}\n\nEmail: {{ email }}\n\nCell Number: {{ contact_number }}\n\nMessage: {{ message }}",
-    "trip_notification": "Dear {{ passenger_name }},\n\nA Swift Lift Club trip has been recorded under your profile:\n\nDate: {{ trip_date }}\nTime Period: {{ trip_period }}\nStatus: {{ status }}\n\nThank you for using Swift Lift Club!",
+    "trip_notification": "Dear {{ passenger_name }},\n\nA Swift Lift Club trip has been recorded under your profile:\n\nTrip ID: {{ trip_id }}\n\nDate: {{ trip_date }}\nTime Period: {{ trip_period }}\nStatus: {{ status }}\n\nThank you for using Swift Lift Club!",
 }
 def send_email(recipient, subject, body):
     """Send an email via Resend API"""
@@ -36,7 +36,7 @@ def send_email(recipient, subject, body):
 
 def lambda_handler(event, context):
     """Lambda function entry point"""
-    print(f"Received event: {json.dumps(event, indent=4, default=custom_serializer)}")
+    # print(f"Received event: {json.dumps(event, indent=4, default=custom_serializer)}")
     try:
         body = json.loads(event.get("body", "{}")) 
         email_type = body.get("email_type")
