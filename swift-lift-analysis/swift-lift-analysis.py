@@ -7,11 +7,11 @@ from decimal import Decimal
 import json
 
 # Initialize DynamoDB
-dynamodb = boto3.resource('dynamodb')
+dynamodb = boto3.client('dynamodb')
 trips_table_name = "Swift-lift-club-portal-trips"
 users_table_name = "Swift-lift-club-portal-users"
-trips_table = dynamodb.Table(trips_table_name)
-users_table = dynamodb.Table(users_table_name)
+# trips_table = dynamodb.Table(trips_table_name)
+# users_table = dynamodb.Table(users_table_name)
 print("DynamoDB Table initialized successfully")
 
 def custom_serializer(obj):
