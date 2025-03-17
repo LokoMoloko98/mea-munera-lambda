@@ -10,13 +10,11 @@ import json
 dynamodb = boto3.client('dynamodb')
 trips_table_name = "Swift-lift-club-portal-trips"
 users_table_name = "Swift-lift-club-portal-users"
-# trips_table = dynamodb.Table(trips_table_name)
-# users_table = dynamodb.Table(users_table_name)
 print("DynamoDB Table initialized successfully")
 
 def custom_serializer(obj):
     if isinstance(obj, Decimal):
-        return float(obj)  # Convert Decimal to float
+        return float(obj)
     raise TypeError(f"Type {type(obj)} not serializable")
 
 def get_trips_by_date(trip_date, table_name):

@@ -48,7 +48,7 @@ def calculate_fare(passenger_type, completed_trips, missed_trips):
         return [completed_trips * 35, "-"]
     elif passenger_type == "defunct":
         return 0  # No fare for defunct passengers
-    elif passenger_type == "Alu":
+    elif passenger_type == "alu":
         return 280
     else:
         raise ValueError("Unknown passenger type")
